@@ -1,0 +1,217 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= pageTitle %> | Admin Performance Management System</title>
+    <link rel="stylesheet" href="/public/styles.css" /><script src="/public/app.js" defer></script>
+  </head>
+  <body class="dashboard-page">
+    <div class="app-shell">
+      <aside class="sidebar">
+        <ul class="nav-list">
+          <li class="nav-item"><a class="active" href="/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a href="/admins">Data Karyawan</a></li>
+          <li class="nav-item"><a href="/performance">Kinerja Harian</a></li>
+          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
+          <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
+          <li class="nav-item"><a href="/jobdesk">Manajemen Jobdesk</a></li>
+          <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
+          <li class="nav-item"><a href="/export">Export Google Sheets</a></li>
+          <li class="nav-item"><a href="/settings">Pengaturan Akun</a></li>
+          <li class="nav-item"><a href="/logout">Logout</a></li>
+        </ul>
+      </aside>
+      <main class="content">
+        <div class="topbar">
+          <div>
+            <div class="muted">Halo, <%= user.full_name %></div>
+            <strong><%= user.role %></strong>
+          </div>
+        </div>
+
+        <div class="dashboard-heading">
+          <div>
+            <div class="hero-chip">Realtime Overview</div>
+            <h1 class="page-title">Dashboard</h1>
+            <p class="muted">Ringkasan kinerja dan aktivitas karyawan.</p>
+          </div>
+          <div class="dashboard-heading-meta">
+            <span class="admin-count"><span class="online-dot"></span><%= dashboard.totalAdmin %> karyawan aktif</span>
+          </div>
+        </div>
+
+        <form class="filter-bar dashboard-filters" method="GET" action="/dashboard">
+          <div class="filter-grid dashboard-filter-grid">
+            <div class="form-field">
+              <label>Bulan</label>
+              <select name="month" onchange="this.form.submit()">
+                <% for (let m = 1; m <= 12; m++) { %>
+                  <option value="<%= m %>" <%= Number(dashboard.filters.month) === m ? 'selected' : '' %>><%= m %></option>
+                <% } %>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Tahun</label>
+              <input type="number" name="year" value="<%= dashboard.filters.year %>" onchange="this.form.submit()" />
+            </div>
+            <div class="form-field">
+              <label>Nama Karyawan</label>
+              <select name="adminId" onchange="this.form.submit()">
+                <option value="">Semua Admin</option>
+                <% adminOptions.forEach((admin) => { %>
+                  <option value="<%= admin.id %>" <%= String(dashboard.filters.adminId) === String(admin.id) ? 'selected' : '' %>><%= admin.name %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Status</label>
+              <select name="status" onchange="this.form.submit()">
+                <option value="">Semua</option>
+                <option value="Selesai" <%= dashboard.filters.status === 'Selesai' ? 'selected' : '' %>>Selesai</option>
+                <option value="Proses" <%= dashboard.filters.status === 'Proses' ? 'selected' : '' %>>Proses</option>
+                <option value="Belum Selesai" <%= dashboard.filters.status === 'Belum Selesai' ? 'selected' : '' %>>Belum Selesai</option>
+                <option value="Terlambat" <%= dashboard.filters.status === 'Terlambat' ? 'selected' : '' %>>Terlambat</option>
+              </select>
+            </div>
+          </div>
+        </form>
+
+        <div class="stats-grid dashboard-stats">
+          <div class="stat-card stat-card-compact">
+            <div class="stat-icon stat-icon-blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 5h16v15H4z"/><path d="M8 3v4M16 3v4M4 9h16"/><path d="m8 14 2 2 5-5"/></svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Total pekerjaan</div>
+              <div class="stat-value"><%= dashboard.totalTasks %></div>
+              <div class="stat-trend">Periode terpilih</div>
+            </div>
+          </div>
+          <div class="stat-card stat-card-compact">
+            <div class="stat-icon stat-icon-green" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Pekerjaan selesai</div>
+              <div class="stat-value"><%= dashboard.completed %><span class="stat-subvalue"> / <%= dashboard.totalTasks %></span></div>
+              <div class="stat-trend"><%= dashboard.pending %> belum selesai · <%= dashboard.late %> terlambat</div>
+            </div>
+          </div>
+          <div class="stat-card stat-card-compact">
+            <div class="stat-icon stat-icon-violet" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M3 17 9 11l4 4 8-9"/><path d="M15 6h6v6"/></svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Rata-rata KPI</div>
+              <div class="stat-value"><%= dashboard.kpiAverage %><span class="stat-subvalue">%</span></div>
+              <div class="stat-trend">Skor keseluruhan karyawan</div>
+            </div>
+          </div>
+        </div>
+
+        <%
+          const chartLabels = dashboard.monthlyTrend.length ? dashboard.monthlyTrend.map((item) => item.month_label || 'N/A') : ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'];
+          const chartValues = dashboard.monthlyTrend.length ? dashboard.monthlyTrend.map((item) => Number(item.avg_kpi || 0)) : [62, 68, 74, 81, 76, 89];
+        %>
+
+        <div class="dashboard-panels">
+          <section class="panel dashboard-panel">
+            <div class="panel-header">
+              <div>
+                <div class="muted">Performa terbaik</div>
+                <h3>Karyawan terbaik</h3>
+              </div>
+              <span class="kpi-pill"><%= dashboard.bestAdmin.avg_kpi || 0 %>%</span>
+            </div>
+            <div class="feature-row">
+              <span class="feature-icon feature-icon-green" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg>
+              </span>
+              <div><strong><%= dashboard.bestAdmin.name %></strong><span>Rata-rata KPI tertinggi</span></div>
+            </div>
+            <div class="feature-divider"></div>
+            <div class="feature-row">
+              <span class="feature-icon feature-icon-amber" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3v18M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </span>
+              <div><strong><%= dashboard.worstAdmin.name %></strong><span>Perlu perhatian · <%= dashboard.worstAdmin.avg_kpi || 0 %>% KPI</span></div>
+            </div>
+          </section>
+
+          <section class="panel dashboard-panel">
+            <div class="panel-header">
+              <div>
+                <div class="muted">Tindak lanjut</div>
+                <h3>Ringkasan audit</h3>
+              </div>
+              <a class="panel-link" href="/audit">Lihat audit</a>
+            </div>
+            <div class="audit-summary">
+              <span class="audit-summary-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              </span>
+              <div><strong><%= dashboard.auditCount %></strong><span>Total catatan audit</span></div>
+            </div>
+            <div class="audit-progress">
+              <div><span>Belum selesai</span><strong><%= dashboard.pending %></strong></div>
+              <div class="progress-track"><span style="width:<%= dashboard.totalTasks ? Math.min(100, Math.round((dashboard.pending / dashboard.totalTasks) * 100)) : 0 %>%"></span></div>
+              <div><span>Terlambat</span><strong><%= dashboard.late %></strong></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="dashboard-charts">
+          <section class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <div class="muted">Tren bulanan</div>
+                <h3>Grafik kinerja</h3>
+              </div>
+              <span class="kpi-pill"><%= dashboard.kpiAverage %>%</span>
+            </div>
+            <div class="chart-wrap" data-chart data-chart-labels='<%= JSON.stringify(chartLabels) %>' data-chart-values='<%= JSON.stringify(chartValues) %>'></div>
+          </section>
+          <section class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <div class="muted">Perbandingan tim</div>
+                <h3>Performa per karyawan</h3>
+              </div>
+              <span class="chart-legend"><span></span> KPI</span>
+            </div>
+            <div class="chart-wrap" data-chart data-chart-type="bar" data-chart-labels='<%= JSON.stringify(dashboard.byAdmin.map((entry) => entry.name)) %>' data-chart-values='<%= JSON.stringify(dashboard.byAdmin.map((entry) => Number(entry.avg_kpi || 0))) %>'></div>
+          </section>
+        </div>
+
+        <div class="panel dashboard-table-panel">
+          <div class="panel-header">
+            <div>
+              <div class="muted">Ikhtisar tim</div>
+              <h3>Ringkasan performa karyawan</h3>
+            </div>
+            <a class="panel-link" href="/admins">Semua karyawan</a>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nama Karyawan</th>
+                  <th>Rata-rata KPI</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% dashboard.byAdmin.forEach((entry) => { %>
+                  <tr>
+                    <td><%= entry.name %></td>
+                    <td><%= entry.avg_kpi || 0 %>%</td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

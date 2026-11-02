@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= pageTitle %> | APMS</title>
+    <link rel="stylesheet" href="/public/styles.css" /><script src="/public/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <ul class="nav-list">
+          <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a href="/admins">Data Karyawan</a></li>
+          <li class="nav-item"><a class="active" href="/performance">Kinerja Harian</a></li>
+          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
+          <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
+          <li class="nav-item"><a href="/jobdesk">Manajemen Jobdesk</a></li>
+          <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
+          <li class="nav-item"><a href="/export">Export Google Sheets</a></li>
+          <li class="nav-item"><a href="/settings">Pengaturan Akun</a></li>
+          <li class="nav-item"><a href="/logout">Logout</a></li>
+        </ul>
+      </aside>
+      <main class="content">
+        <div class="topbar">
+          <div><div class="muted">Halo, <%= user.full_name %></div><strong><%= user.role %></strong></div>
+          <div class="user-meta">Detail Kinerja</div>
+        </div>
+        <h1 class="page-title">Detail Kinerja</h1>
+        <div class="panel">
+          <div class="form-grid">
+            <div class="form-field"><label>Karyawan</label><div><%= entry.admin_name %></div></div>
+            <div class="form-field"><label>Jobdesk</label><div><%= entry.job_name %></div></div>
+            <div class="form-field"><label>Tanggal</label><div><%= entry.entry_date %></div></div>
+            <div class="form-field"><label>Status</label><div><%= entry.status %></div></div>
+            <div class="form-field"><label>Target</label><div><%= entry.target_value %></div></div>
+            <div class="form-field"><label>Hasil Aktual</label><div><%= entry.actual_result %></div></div>
+            <div class="form-field"><label>Persentase</label><div><%= entry.percentage || 0 %>%</div></div>
+            <div class="form-field"><label>Nilai KPI</label><div><%= entry.kpi_score || 0 %></div></div>
+            <div class="form-field" style="grid-column:1 / -1;"><label>Catatan</label><div><%= entry.notes || '-' %></div></div>
+            <div class="form-field" style="grid-column:1 / -1;"><label>Bukti Pekerjaan</label>
+              <% if (entry.evidence_path) { %>
+                <a href="<%= entry.evidence_path %>" target="_blank">Lihat bukti</a>
+              <% } else { %>
+                <span>-</span>
+              <% } %>
+            </div>
+          </div>
+          <div class="btn-row">
+            <a class="btn btn-secondary" href="/performance">Kembali</a>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

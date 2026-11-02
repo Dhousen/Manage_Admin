@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= pageTitle %> | APMS</title>
+    <link rel="stylesheet" href="/public/styles.css" /><script src="/public/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <ul class="nav-list">
+          <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a class="active" href="/admins">Data Karyawan</a></li>
+          <li class="nav-item"><a href="/performance">Kinerja Harian</a></li>
+          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
+          <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
+          <li class="nav-item"><a href="/jobdesk">Manajemen Jobdesk</a></li>
+          <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
+          <li class="nav-item"><a href="/export">Export Google Sheets</a></li>
+          <li class="nav-item"><a href="/settings">Pengaturan Akun</a></li>
+          <li class="nav-item"><a href="/logout">Logout</a></li>
+        </ul>
+      </aside>
+      <main class="content">
+        <div class="topbar">
+          <div><div class="muted">Halo, <%= user.full_name %></div><strong><%= user.role %></strong></div>
+          <div class="user-meta">Data Karyawan</div>
+        </div>
+        <div class="panel-header">
+          <div>
+            <h1 class="page-title">Data Karyawan</h1>
+            <div class="muted">Kelola profil karyawan yang akan dicatat performanya.</div>
+          </div>
+          <% if (canManageAdmins) { %>
+            <a class="btn btn-primary" href="/admin/new">+ Tambah Karyawan</a>
+          <% } %>
+        </div>
+        <div class="panel">
+          <table>
+            <thead>
+              <tr>
+                <th>Nama Karyawan</th>
+                <th>Posisi</th>
+                <th>Status</th>
+                <th>Total Tugas</th>
+                <th>Diselesaikan</th>
+                <th>Rata-rata KPI</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (admins.length) { admins.forEach((admin) => { %>
+                <tr>
+                  <td><%= admin.name %></td>
+                  <td><%= admin.position || '-' %></td>
+                  <td><span class="status-badge <%= Number(admin.active) === 1 ? 'status-selesai' : 'status-belum' %>"><%= Number(admin.active) === 1 ? 'Aktif' : 'Nonaktif' %></span></td>
+                  <td><%= admin.total_tasks || 0 %></td>
+                  <td><%= admin.completed || 0 %></td>
+                  <td><%= admin.avg_kpi || 0 %>%</td>
+                  <td>
+                    <div class="table-actions">
+                      <a href="/admin/<%= admin.id %>" class="action-btn" title="Detail" aria-label="Detail">
+                        <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                      </a>
+                      <% if (canManageAdmins) { %>
+                        <a href="/admin/<%= admin.id %>/edit" class="action-btn" title="Edit karyawan" aria-label="Edit karyawan">
+                          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>
+                        </a>
+                        <form action="/admin/<%= admin.id %>/status" method="POST">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                          <% if (Number(admin.active) === 1) { %>
+                            <button class="action-btn delete" type="submit" title="Nonaktifkan karyawan" aria-label="Nonaktifkan karyawan">
+                              <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                            </button>
+                          <% } else { %>
+                            <button class="action-btn restore" type="submit" title="Aktifkan karyawan" aria-label="Aktifkan karyawan">
+                              <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 1-2.3-5.7"/><path d="M20 4v6h-6"/></svg>
+                            </button>
+                          <% } %>
+                        </form>
+                      <% } %>
+                    </div>
+                  </td>
+                </tr>
+              <% }) } else { %>
+                <tr><td colspan="7" class="muted">Belum ada data karyawan. Tambahkan karyawan terlebih dahulu untuk mulai mengelola jobdesk dan performanya.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

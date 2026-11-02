@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= pageTitle %> | APMS</title>
+    <link rel="stylesheet" href="/public/styles.css" /><script src="/public/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <ul class="nav-list">
+          <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a href="/admins">Data Karyawan</a></li>
+          <li class="nav-item"><a class="active" href="/performance">Kinerja Harian</a></li>
+          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
+          <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
+          <li class="nav-item"><a href="/jobdesk">Manajemen Jobdesk</a></li>
+          <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
+          <li class="nav-item"><a href="/export">Export Google Sheets</a></li>
+          <li class="nav-item"><a href="/settings">Pengaturan Akun</a></li>
+          <li class="nav-item"><a href="/logout">Logout</a></li>
+        </ul>
+      </aside>
+      <main class="content">
+        <div class="topbar">
+          <div><div class="muted">Halo, <%= user.full_name %></div><strong><%= user.role %></strong></div>
+          <div class="user-meta">Input Kinerja</div>
+        </div>
+        <h1 class="page-title"><%= pageTitle %></h1>
+        <div class="panel">
+          <% if (!adminOptions.length) { %>
+            <p class="muted">Tambahkan karyawan di <a href="/admins">Data Karyawan</a> sebelum mencatat performa.</p>
+          <% } %>
+          <form method="POST" action="/performance/save" enctype="multipart/form-data">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <input type="hidden" name="id" value="<%= entry ? entry.id : '' %>" />
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Nama Karyawan</label>
+                <select name="admin_id" required>
+                  <% if (!adminOptions.length) { %>
+                    <option value="" selected disabled>Tambahkan karyawan terlebih dahulu</option>
+                  <% } %>
+                  <% adminOptions.forEach((admin) => { %>
+                    <option value="<%= admin.id %>" <%= entry && Number(entry.admin_id) === Number(admin.id) ? 'selected' : '' %>><%= admin.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Jobdesk</label>
+                <select name="jobdesk_id" required>
+                  <% if (!jobOptions.length) { %>
+                    <option value="" selected disabled>Buat jobdesk terlebih dahulu</option>
+                  <% } %>
+                  <% jobOptions.forEach((job) => { %>
+                    <option value="<%= job.id %>" <%= entry && Number(entry.jobdesk_id) === Number(job.id) ? 'selected' : '' %>><%= job.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Tanggal</label>
+                <input type="date" name="entry_date" value="<%= entry ? entry.entry_date : new Date().toISOString().slice(0, 10) %>" required />
+              </div>
+              <div class="form-field">
+                <label>Nama Tugas</label>
+                <input type="text" name="name" value="<%= entry ? entry.name : '' %>" required />
+              </div>
+              <div class="form-field">
+                <label>Target</label>
+                <input type="number" name="target_value" value="<%= entry ? entry.target_value : 0 %>" step="0.1" />
+              </div>
+              <div class="form-field">
+                <label>Hasil Aktual</label>
+                <input type="number" name="actual_result" value="<%= entry ? entry.actual_result : 0 %>" step="0.1" />
+              </div>
+              <div class="form-field">
+                <label>Status</label>
+                <select name="status">
+                  <% statusOptions.forEach((status) => { %>
+                    <option value="<%= status %>" <%= entry && entry.status === status ? 'selected' : '' %>><%= status %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Persentase</label>
+                <input type="number" name="percentage" value="<%= entry ? entry.percentage : 0 %>" min="0" max="100" />
+              </div>
+              <div class="form-field">
+                <label>Nilai KPI</label>
+                <input type="number" name="kpi_score" value="<%= entry ? entry.kpi_score : 0 %>" />
+              </div>
+              <div class="form-field">
+                <label>Nama Pemeriksa</label>
+                <input type="text" name="checked_by" value="<%= entry ? entry.checked_by : user.full_name %>" />
+              </div>
+              <div class="form-field" style="grid-column:1 / -1;">
+                <label>Catatan Controller</label>
+                <textarea name="notes" rows="3"><%= entry ? entry.notes : '' %></textarea>
+              </div>
+              <div class="form-field" style="grid-column:1 / -1;">
+                <label>Bukti Pekerjaan</label>
+                <input type="file" name="evidence" />
+                <% if (entry && entry.evidence_path) { %>
+                  <a href="<%= entry.evidence_path %>" target="_blank">Lihat bukti</a>
+                <% } %>
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" type="submit">Simpan</button>
+              <a class="btn btn-secondary" href="/performance">Kembali</a>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

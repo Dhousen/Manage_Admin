@@ -1,0 +1,152 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= pageTitle %> | APMS</title>
+    <link rel="stylesheet" href="/public/styles.css" /><script src="/public/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <ul class="nav-list">
+          <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a href="/admins">Data Karyawan</a></li>
+          <li class="nav-item"><a href="/performance">Kinerja Harian</a></li>
+          <li class="nav-item"><a class="active" href="/audit">Audit Kinerja</a></li>
+          <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
+          <li class="nav-item"><a href="/jobdesk">Manajemen Jobdesk</a></li>
+          <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
+          <li class="nav-item"><a href="/export">Export Google Sheets</a></li>
+          <li class="nav-item"><a href="/settings">Pengaturan Akun</a></li>
+          <li class="nav-item"><a href="/logout">Logout</a></li>
+        </ul>
+      </aside>
+      <main class="content">
+        <div class="topbar">
+          <div><div class="muted">Halo, <%= user.full_name %></div><strong><%= user.role %></strong></div>
+          <div class="user-meta">Audit Kinerja</div>
+        </div>
+        <h1 class="page-title">Audit Kinerja</h1>
+
+        <section class="panel audit-form-panel">
+          <div class="panel-header">
+            <div>
+              <div class="muted">Dokumentasikan pemeriksaan dan tindak lanjut</div>
+              <h3>Tambah Audit</h3>
+            </div>
+          </div>
+          <form method="POST" action="/audit/save" enctype="multipart/form-data">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <div class="form-grid audit-form-grid">
+              <div class="form-field">
+                <label>Nama Karyawan</label>
+                <select name="admin_id" required>
+                  <% if (!adminOptions.length) { %>
+                    <option value="" selected disabled>Tambahkan karyawan terlebih dahulu</option>
+                  <% } %>
+                  <% adminOptions.forEach((admin) => { %>
+                    <option value="<%= admin.id %>"><%= admin.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Jobdesk</label>
+                <select name="jobdesk_id">
+                  <option value="">-Pilih Jobdesk-</option>
+                  <% jobOptions.forEach((job) => { %>
+                    <option value="<%= job.id %>"><%= job.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Tanggal Audit</label>
+                <input type="date" name="audit_date" value="<%= new Date().toISOString().slice(0,10) %>" required />
+              </div>
+              <div class="form-field">
+                <label>Nama Pekerjaan</label>
+                <input type="text" name="task_name" required />
+              </div>
+              <div class="form-field">
+                <label>Hasil Pemeriksaan</label>
+                <input type="text" name="inspection_result" />
+              </div>
+              <div class="form-field">
+                <label>Kesesuaian SOP</label>
+                <select name="sop_match">
+                  <option value="Sesuai">Sesuai</option>
+                  <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                  <option value="Tidak Sesuai">Tidak Sesuai</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Temuan</label>
+                <input type="text" name="findings" />
+              </div>
+              <div class="form-field">
+                <label>Rekomendasi</label>
+                <input type="text" name="recommendation" />
+              </div>
+              <div class="form-field">
+                <label>Auditor</label>
+                <input type="text" name="auditor" value="<%= user.full_name %>" />
+              </div>
+              <div class="form-field">
+                <label>Status Tindak Lanjut</label>
+                <select name="follow_up_status">
+                  <option value="Menunggu Pemeriksaan">Menunggu Pemeriksaan</option>
+                  <option value="Lolos Audit">Lolos Audit</option>
+                  <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                  <option value="Tidak Lolos Audit">Tidak Lolos Audit</option>
+                </select>
+              </div>
+              <div class="form-field audit-evidence-field">
+                <label>Bukti Screenshot atau Foto</label>
+                <input type="file" name="evidence" />
+              </div>
+            </div>
+            <div class="btn-row audit-form-actions">
+              <button class="btn btn-primary" type="submit">Simpan Audit</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel audit-table-panel">
+          <div class="panel-header">
+            <div>
+              <div class="muted">Catatan pemeriksaan yang tersimpan</div>
+              <h3>Riwayat Audit</h3>
+            </div>
+            <span class="audit-count"><%= audits.length %> audit</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+            <thead>
+              <tr>
+                <th>Karyawan</th>
+                <th>Tanggal</th>
+                <th>Nama Pekerjaan</th>
+                <th>Hasil Pemeriksaan</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (audits.length) { audits.forEach((audit) => { %>
+                <tr>
+                  <td><%= audit.admin_name %></td>
+                  <td><%= audit.audit_date %></td>
+                  <td><%= audit.task_name %></td>
+                  <td><%= audit.inspection_result || '-' %></td>
+                  <td><%= audit.follow_up_status %></td>
+                </tr>
+              <% }) } else { %>
+                <tr><td colspan="5" class="muted audit-empty-state">Belum ada catatan audit. Form di atas siap digunakan untuk mencatat pemeriksaan pertama.</td></tr>
+              <% } %>
+            </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

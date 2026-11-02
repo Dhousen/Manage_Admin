@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= pageTitle %> | APMS</title>
+    <link rel="stylesheet" href="/public/styles.css" />
+    <script src="/public/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <ul class="nav-list">
+          <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a class="active" href="/admins">Data Karyawan</a></li>
+          <li class="nav-item"><a href="/performance">Kinerja Harian</a></li>
+          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
+          <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
+          <li class="nav-item"><a href="/jobdesk">Manajemen Jobdesk</a></li>
+          <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
+          <li class="nav-item"><a href="/export">Export Google Sheets</a></li>
+          <li class="nav-item"><a href="/settings">Pengaturan Akun</a></li>
+          <li class="nav-item"><a href="/logout">Logout</a></li>
+        </ul>
+      </aside>
+      <main class="content">
+        <div class="topbar">
+          <div><div class="muted">Halo, <%= user.full_name %></div><strong><%= user.role %></strong></div>
+          <div class="user-meta">Data Karyawan</div>
+        </div>
+        <h1 class="page-title"><%= admin ? 'Edit Data Karyawan' : 'Tambah Karyawan' %></h1>
+        <section class="panel admin-form-panel">
+          <div class="panel-header">
+            <div>
+              <div class="muted">Data karyawan untuk pemantauan performa</div>
+              <h3>Informasi karyawan</h3>
+            </div>
+            <% if (admin) { %>
+              <span class="status-badge <%= Number(admin.active) === 1 ? 'status-selesai' : 'status-belum' %>"><%= Number(admin.active) === 1 ? 'Aktif' : 'Nonaktif' %></span>
+            <% } %>
+          </div>
+          <form method="POST" action="<%= formAction %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <div class="form-grid admin-form-grid">
+              <div class="form-field">
+                <label for="employee-name">Nama karyawan</label>
+                <input id="employee-name" type="text" name="name" value="<%= admin ? admin.name : '' %>" required />
+              </div>
+              <div class="form-field">
+                <label for="employee-position">Posisi</label>
+                <input id="employee-position" type="text" name="position" value="<%= admin ? admin.position || '' : '' %>" />
+              </div>
+              <div class="form-field">
+                <label for="employee-department">Departemen</label>
+                <input id="employee-department" type="text" name="department" value="<%= admin ? admin.department || '' : '' %>" />
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" type="submit"><%= admin ? 'Simpan Perubahan' : 'Tambah Karyawan' %></button>
+              <a class="btn btn-secondary" href="/admins">Batal</a>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

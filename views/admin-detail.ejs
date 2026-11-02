@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= pageTitle %> | APMS</title>
+    <link rel="stylesheet" href="/public/styles.css" /><script src="/public/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <ul class="nav-list">
+          <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a class="active" href="/admins">Data Karyawan</a></li>
+          <li class="nav-item"><a href="/performance">Kinerja Harian</a></li>
+          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
+          <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
+          <li class="nav-item"><a href="/jobdesk">Manajemen Jobdesk</a></li>
+          <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
+          <li class="nav-item"><a href="/export">Export Google Sheets</a></li>
+          <li class="nav-item"><a href="/settings">Pengaturan Akun</a></li>
+          <li class="nav-item"><a href="/logout">Logout</a></li>
+        </ul>
+      </aside>
+      <main class="content">
+        <div class="topbar">
+          <div><div class="muted">Halo, <%= user.full_name %></div><strong><%= user.role %></strong></div>
+          <div class="user-meta">Detail Admin</div>
+        </div>
+        <h1 class="page-title"><%= admin.name %></h1>
+        <div class="panel">
+          <table>
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Nama Tugas</th>
+                <th>Status</th>
+                <th>Persentase</th>
+                <th>Nilai KPI</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% entries.forEach((entry) => { %>
+                <tr>
+                  <td><%= entry.entry_date %></td>
+                  <td><%= entry.job_name %></td>
+                  <td><%= entry.status %></td>
+                  <td><%= entry.percentage || 0 %>%</td>
+                  <td><%= entry.kpi_score || 0 %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

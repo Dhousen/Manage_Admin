@@ -1,0 +1,121 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= pageTitle %> | APMS</title>
+    <link rel="stylesheet" href="/public/styles.css" /><script src="/public/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <ul class="nav-list">
+          <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a href="/admins">Data Karyawan</a></li>
+          <li class="nav-item"><a href="/performance">Kinerja Harian</a></li>
+          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
+          <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
+          <li class="nav-item"><a href="/jobdesk">Manajemen Jobdesk</a></li>
+          <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
+          <li class="nav-item"><a href="/export">Export Google Sheets</a></li>
+          <li class="nav-item"><a class="active" href="/settings">Pengaturan Akun</a></li>
+          <li class="nav-item"><a href="/logout">Logout</a></li>
+        </ul>
+      </aside>
+      <main class="content">
+        <div class="topbar">
+          <div><div class="muted">Halo, <%= user.full_name %></div><strong><%= user.role %></strong></div>
+          <div class="user-meta">Pengaturan</div>
+        </div>
+        <h1 class="page-title">Pengaturan Akun</h1>
+        <% if (notice) { %>
+          <div class="alert <%= noticeIsError ? '' : 'settings-success' %>" role="status"><%= notice %></div>
+        <% } %>
+
+        <section class="panel settings-section">
+          <div class="panel-header">
+            <div>
+              <div class="muted">Keamanan akun</div>
+              <h3>Ganti sandi saya</h3>
+            </div>
+          </div>
+          <p class="muted">Akun: <strong><%= user.username %></strong>. Sandi baru minimal 12 karakter.</p>
+          <form method="POST" action="/settings/password">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <div class="form-grid settings-password-grid">
+              <div class="form-field">
+                <label for="current-password">Sandi saat ini</label>
+                <input id="current-password" type="password" name="current_password" autocomplete="current-password" required />
+              </div>
+              <div class="form-field">
+                <label for="new-password">Sandi baru</label>
+                <input id="new-password" type="password" name="new_password" minlength="12" autocomplete="new-password" required />
+              </div>
+              <div class="form-field">
+                <label for="confirm-password">Konfirmasi sandi baru</label>
+                <input id="confirm-password" type="password" name="confirm_password" minlength="12" autocomplete="new-password" required />
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" type="submit">Perbarui Sandi</button>
+            </div>
+          </form>
+        </section>
+
+        <% if (isOwner) { %>
+          <section class="panel settings-section">
+            <div class="panel-header">
+              <div>
+                <div class="muted">Akses admin</div>
+                <h3>Reset sandi akun admin</h3>
+              </div>
+            </div>
+            <% if (adminAccount) { %>
+              <p class="muted">Akun admin: <strong><%= adminAccount.username %></strong>. Admin perlu menggunakan sandi baru setelah reset.</p>
+              <form method="POST" action="/settings/admin-password">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <div class="form-grid settings-password-grid">
+                  <div class="form-field">
+                    <label for="admin-new-password">Sandi baru admin</label>
+                    <input id="admin-new-password" type="password" name="new_password" minlength="12" autocomplete="new-password" required />
+                  </div>
+                  <div class="form-field">
+                    <label for="admin-confirm-password">Konfirmasi sandi baru</label>
+                    <input id="admin-confirm-password" type="password" name="confirm_password" minlength="12" autocomplete="new-password" required />
+                  </div>
+                </div>
+                <div class="btn-row">
+                  <button class="btn btn-primary" type="submit">Reset Sandi Admin</button>
+                </div>
+              </form>
+            <% } else { %>
+              <p class="muted">Akun admin belum tersedia.</p>
+            <% } %>
+          </section>
+
+          <section class="panel settings-section">
+            <div class="panel-header">
+              <div>
+                <div class="muted">Integrasi</div>
+                <h3>Google Sheets</h3>
+              </div>
+            </div>
+            <form method="POST" action="/settings/google">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <div class="form-field">
+                <label for="google-enabled">Status Google Sheets</label>
+                <select id="google-enabled" name="google_enabled">
+                  <option value="true" <%= googleConfig === 'true' ? 'selected' : '' %>>Aktif</option>
+                  <option value="false" <%= googleConfig === 'false' ? 'selected' : '' %>>Nonaktif</option>
+                </select>
+              </div>
+              <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Simpan Pengaturan</button>
+              </div>
+            </form>
+          </section>
+        <% } %>
+      </main>
+    </div>
+  </body>
+</html>

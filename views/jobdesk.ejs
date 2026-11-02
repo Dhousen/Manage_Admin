@@ -1,0 +1,144 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= pageTitle %> | APMS</title>
+    <link rel="stylesheet" href="/public/styles.css" /><script src="/public/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <ul class="nav-list">
+          <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a href="/admins">Data Karyawan</a></li>
+          <li class="nav-item"><a href="/performance">Kinerja Harian</a></li>
+          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
+          <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
+          <li class="nav-item"><a class="active" href="/jobdesk">Manajemen Jobdesk</a></li>
+          <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
+          <li class="nav-item"><a href="/export">Export Google Sheets</a></li>
+          <li class="nav-item"><a href="/settings">Pengaturan Akun</a></li>
+          <li class="nav-item"><a href="/logout">Logout</a></li>
+        </ul>
+      </aside>
+      <main class="content">
+        <div class="topbar">
+          <div><div class="muted">Halo, <%= user.full_name %></div><strong><%= user.role %></strong></div>
+          <div class="user-meta">Jobdesk</div>
+        </div>
+        <h1 class="page-title">Manajemen Jobdesk</h1>
+        <% if (!adminOptions.length) { %>
+          <div class="jobdesk-empty-notice">Tambahkan karyawan melalui <a href="/admins">Data Karyawan</a> sebelum membuat jobdesk.</div>
+        <% } %>
+
+        <div class="panel jobdesk-form-panel">
+          <div class="panel-header">
+            <div>
+              <div class="muted">Tetapkan target, frekuensi, dan bobot kinerja</div>
+              <h3>Tambah / Edit Jobdesk</h3>
+            </div>
+          </div>
+          <form method="POST" action="/jobdesk/save">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <div class="form-grid jobdesk-form-grid">
+              <div class="form-field">
+                <label>Karyawan</label>
+                <select name="admin_id" required>
+                  <% if (!adminOptions.length) { %>
+                    <option value="" selected disabled>Tambahkan karyawan terlebih dahulu</option>
+                  <% } %>
+                  <% adminOptions.forEach((admin) => { %>
+                    <option value="<%= admin.id %>"><%= admin.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Nama Jobdesk</label>
+                <input type="text" name="name" required />
+              </div>
+              <div class="form-field">
+                <label>Target Harian</label>
+                <input type="number" name="target_value" value="1" step="0.1" />
+              </div>
+              <div class="form-field">
+                <label>Target Mingguan</label>
+                <input type="number" name="weekly_target" value="1" step="0.1" />
+              </div>
+              <div class="form-field">
+                <label>Target Bulanan</label>
+                <input type="number" name="monthly_target" value="1" step="0.1" />
+              </div>
+              <div class="form-field">
+                <label>Bobot KPI</label>
+                <input type="number" name="weight" value="10" />
+              </div>
+              <div class="form-field">
+                <label>Frekuensi</label>
+                <select name="schedule_type">
+                  <option value="daily">Setiap hari</option>
+                  <option value="weekly">Mingguan</option>
+                  <option value="monthly">Bulanan</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Batas Waktu</label>
+                <input type="time" name="due_time" value="09:00" />
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" type="submit">Simpan Jobdesk</button>
+            </div>
+          </form>
+        </div>
+
+        <section class="panel jobdesk-table-panel">
+          <div class="panel-header">
+            <div>
+              <div class="muted">Daftar tugas berdasarkan waktu dibuat</div>
+              <h3>Daftar Jobdesk</h3>
+            </div>
+            <span class="jobdesk-count"><%= jobdesks.length %> jobdesk</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+            <thead>
+              <tr>
+                <th>Karyawan</th>
+                <th>Nama Jobdesk</th>
+                <th>Target</th>
+                <th>Bobot</th>
+                <th>Frekuensi</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (jobdesks.length) { jobdesks.forEach((job) => { %>
+                <tr>
+                  <td><%= job.admin_name %></td>
+                  <td><%= job.name %></td>
+                  <td><%= job.target_value || 0 %></td>
+                  <td><%= job.weight || 0 %></td>
+                  <td><%= ({ daily: 'Setiap hari', weekly: 'Mingguan', monthly: 'Bulanan' })[job.schedule_type] || job.schedule_type %></td>
+                  <td>
+                    <% if (isOwner) { %>
+                    <form action="/jobdesk/delete/<%= job.id %>" method="POST" style="display:inline;">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <button class="action-btn delete" type="submit" title="Hapus" aria-label="Hapus">
+                        <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                      </button>
+                    </form>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) } else { %>
+                <tr><td colspan="6" class="muted jobdesk-empty-state">Belum ada jobdesk. Gunakan formulir di atas untuk menambahkan tugas karyawan.</td></tr>
+              <% } %>
+            </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

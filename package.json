@@ -1,0 +1,32 @@
+{
+  "name": "management_admin",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node app.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "admin",
+    "performance",
+    "management",
+    "dashboard"
+  ],
+  "author": "",
+  "license": "ISC",
+  "description": "Admin Performance Management System",
+  "dependencies": {
+    "@e965/xlsx": "^0.20.3",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^18.0.9",
+    "ejs": "^7.0.2",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.2",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
+    "multer": "^2.5.0",
+    "session-file-store": "^1.5.0",
+    "sql.js": "^1.15.2"
+  }
+}

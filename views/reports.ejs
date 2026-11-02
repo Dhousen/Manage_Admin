@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= pageTitle %> | APMS</title>
+    <link rel="stylesheet" href="/public/styles.css" /><script src="/public/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <ul class="nav-list">
+          <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a href="/admins">Data Karyawan</a></li>
+          <li class="nav-item"><a href="/performance">Kinerja Harian</a></li>
+          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
+          <li class="nav-item"><a class="active" href="/reports">Laporan Bulanan</a></li>
+          <li class="nav-item"><a href="/jobdesk">Manajemen Jobdesk</a></li>
+          <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
+          <li class="nav-item"><a href="/export">Export Google Sheets</a></li>
+          <li class="nav-item"><a href="/settings">Pengaturan Akun</a></li>
+          <li class="nav-item"><a href="/logout">Logout</a></li>
+        </ul>
+      </aside>
+      <main class="content">
+        <div class="topbar">
+          <div><div class="muted">Halo, <%= user.full_name %></div><strong><%= user.role %></strong></div>
+          <div class="user-meta">Laporan Bulanan</div>
+        </div>
+        <h1 class="page-title">Laporan Bulanan</h1>
+        <div class="panel">
+          <table>
+            <thead>
+              <tr>
+                <th>Nama Karyawan</th>
+                <th>Total Hari</th>
+                <th>Total Tugas</th>
+                <th>Selesai</th>
+                <th>Terlambat</th>
+                <th>Rata-rata KPI</th>
+                <th>Temuan Audit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% reportData.forEach((row) => { %>
+                <tr>
+                  <td><%= row.admin_name %></td>
+                  <td><%= row.total_days || 0 %></td>
+                  <td><%= row.total_tasks || 0 %></td>
+                  <td><%= row.total_done || 0 %></td>
+                  <td><%= row.total_late || 0 %></td>
+                  <td><%= row.avg_kpi || 0 %>%</td>
+                  <td><%= row.findings || 0 %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
