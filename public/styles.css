@@ -562,9 +562,63 @@ body[data-theme="light"] .jobdesk-form-grid .form-field input[type="time"] {
 }
 .jobdesk-table-panel .table-wrap {
   overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 .jobdesk-table-panel table {
-  min-width: 620px;
+  min-width: 820px;
+}
+.jobdesk-table-panel td:last-child {
+  min-width: 224px;
+  white-space: nowrap;
+}
+.jobdesk-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 520px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.jobdesk-filter label {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+.jobdesk-filter select {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 36px 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background-color: rgba(15, 23, 42, 0.7);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-repeat: no-repeat;
+  background-position: right 14px center, right 9px center;
+  background-size: 6px 6px, 6px 6px;
+  color: var(--text);
+}
+body[data-theme="light"] .jobdesk-filter select {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+.admin-table-wrap {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.admin-table-wrap table {
+  min-width: 920px;
+}
+.admin-table-wrap th:last-child,
+.admin-table-wrap td:last-child {
+  min-width: 176px;
+  white-space: nowrap;
 }
 .jobdesk-empty-state {
   padding: 24px 12px;
@@ -657,9 +711,14 @@ body[data-theme="light"] .jobdesk-form-grid .form-field input[type="time"] {
   display: flex;
   align-items: center;
   gap: 7px;
+  flex-wrap: nowrap;
 }
 .table-actions form {
   display: inline-flex;
+  flex: 0 0 auto;
+}
+.table-actions .action-btn {
+  flex: 0 0 36px;
 }
 .action-btn.restore {
   color: #0f9f6e;
@@ -1617,7 +1676,15 @@ body[data-theme="light"] .filter-bar {
 .report-currency { font-size: clamp(1.05rem, 2vw, 1.5rem); }
 .revenue-form { padding-top: 6px; }
 .compact-actions { margin: 0; gap: 6px; align-items: center; }
-.compact-actions form { display: inline-flex; }
+.compact-actions { flex-wrap: nowrap; }
+.compact-actions form { display: inline-flex; flex: 0 0 auto; }
+.compact-actions .action-btn { flex: 0 0 36px; width: 36px; min-width: 36px; }
+.action-btn.toggle-status {
+  color: var(--muted);
+}
+.jobdesk-table-panel .compact-actions .action-btn {
+  height: 36px;
+}
 .filter-submit { display: flex; justify-content: flex-end; }
 body[data-theme="light"] .assessment-table th,
 body[data-theme="light"] .assessment-table td {
@@ -1637,6 +1704,8 @@ body[data-theme="light"] .assessment-cell.is-future { background: #eaf1fa; }
 @media (max-width: 540px) {
   .profile-toggle { gap: 5px; padding: 8px; font-size: 0.8rem; }
   .profile-role { display: none; }
+  .jobdesk-filter { align-items: stretch; flex-direction: column; gap: 7px; }
+  .jobdesk-filter select { flex-basis: auto; }
   .assessment-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .assessment-table .sticky-kpi { width: 170px; min-width: 170px; }
   .assessment-table th, .assessment-table td { min-width: 58px; }

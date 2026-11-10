@@ -11,6 +11,7 @@ Aplikasi web internal untuk mencatat jobdesk, kinerja harian, audit, dan ringkas
 - Menambahkan pengelolaan KPI dengan versioning agar perubahan tidak mengubah penilaian historis.
 - Memperluas akses operasional untuk owner dan admin, serta menambahkan migrasi skema aditif untuk penilaian, riwayat, unit, dan omset.
 - Memigrasikan database aktif setelah membuat cadangan; pemeriksaan integritas SQLite dan foreign key berhasil.
+- Merapikan tombol aksi dan filter pada tabel jobdesk serta data karyawan agar tidak bertumpuk dan tetap mudah digunakan pada layar kecil.
 
 ## Status kesiapan produksi
 

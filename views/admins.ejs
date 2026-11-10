@@ -36,7 +36,8 @@
           <% } %>
         </div>
         <div class="panel">
-          <table>
+          <div class="table-wrap admin-table-wrap">
+            <table>
             <thead>
               <tr>
                 <th>Nama Karyawan</th>
@@ -72,7 +73,7 @@
                           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                           <% if (Number(admin.active) === 1) { %>
                             <button class="action-btn delete" type="submit" title="Nonaktifkan karyawan" aria-label="Nonaktifkan karyawan">
-                              <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                                <svg viewBox="0 0 24 24"><path d="M8 7v10"/><path d="M16 7v10"/><path d="M5 4h14l1 16H4L5 4Z"/></svg>
                             </button>
                           <% } else { %>
                             <button class="action-btn restore" type="submit" title="Aktifkan karyawan" aria-label="Aktifkan karyawan">
@@ -83,7 +84,9 @@
                         <% if (admin.can_delete) { %>
                           <form action="/admin/<%= admin.id %>/delete" method="POST">
                             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                            <button class="action-btn delete" type="submit" title="Hapus karyawan" aria-label="Hapus karyawan" onclick="return confirm('Hapus karyawan ini?')">Hapus</button>
+                            <button class="action-btn delete" type="submit" title="Hapus karyawan" aria-label="Hapus karyawan" onclick="return confirm('Hapus karyawan ini?')">
+                              <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                            </button>
                           </form>
                         <% } %>
                       <% } %>
@@ -94,7 +97,8 @@
                 <tr><td colspan="8" class="muted">Belum ada data karyawan. Tambahkan karyawan terlebih dahulu untuk mulai mengelola jobdesk dan performanya.</td></tr>
               <% } %>
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       </main>
     </div>
