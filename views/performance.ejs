@@ -1,10 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= pageTitle %> | APMS</title>
-    <link rel="stylesheet" href="/public/styles.css" /><script src="/public/app.js" defer></script>
+    <link rel="stylesheet" href="/public/styles.css" />
+    <script src="/public/app.js" defer></script>
   </head>
   <body>
     <div class="app-shell">
@@ -12,116 +13,153 @@
         <ul class="nav-list">
           <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
           <li class="nav-item"><a href="/admins">Data Karyawan</a></li>
-          <li class="nav-item"><a class="active" href="/performance">Kinerja Harian</a></li>
-          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
-          <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
+          <li class="nav-item"><a class="active" href="/assessments">Penilaian Kinerja Admin</a></li>
           <li class="nav-item"><a href="/jobdesk">Manajemen Jobdesk</a></li>
+          <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
           <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
-          <li class="nav-item"><a href="/export">Export Google Sheets</a></li>
           <li class="nav-item"><a href="/settings">Pengaturan Akun</a></li>
           <li class="nav-item"><a href="/logout">Logout</a></li>
         </ul>
       </aside>
       <main class="content">
+        <form hidden aria-hidden="true"><input type="hidden" name="_csrf" value="<%= csrfToken %>" /></form>
         <div class="topbar">
-          <div><div class="muted">Halo, <%= user.full_name %></div><strong><%= user.role %></strong></div>
-          <div class="user-meta">Monitoring Kinerja Harian</div>
-        </div>
-        <h1 class="page-title">Kinerja Harian</h1>
-
-        <div class="filter-bar">
-          <form method="GET" action="/performance">
-            <div class="filter-grid">
-              <div class="form-field">
-                <label>Tanggal</label>
-                <input type="date" name="date" value="<%= filters.date %>" onchange="this.form.submit()" />
-              </div>
-              <div class="form-field">
-                <label>Bulan</label>
-                <input type="number" name="month" value="<%= filters.month %>" min="1" max="12" onchange="this.form.submit()" />
-              </div>
-              <div class="form-field">
-                <label>Tahun</label>
-                <input type="number" name="year" value="<%= filters.year %>" onchange="this.form.submit()" />
-              </div>
-              <div class="form-field">
-                <label>Nama Karyawan</label>
-                <select name="adminId" onchange="this.form.submit()">
-                  <option value="">Semua</option>
-                  <% adminOptions.forEach((admin) => { %>
-                    <option value="<%= admin.id %>" <%= String(filters.adminId) === String(admin.id) ? 'selected' : '' %>><%= admin.name %></option>
-                  <% }) %>
-                </select>
-              </div>
-              <div class="form-field">
-                <label>Status</label>
-                <select name="status" onchange="this.form.submit()">
-                  <option value="">Semua</option>
-                  <% statusOptions.forEach((status) => { %>
-                    <option value="<%= status %>" <%= filters.status === status ? 'selected' : '' %>><%= status %></option>
-                  <% }) %>
-                </select>
-              </div>
+          <div class="topbar-leading"><div class="muted">Penilaian kinerja dan history audit</div></div>
+          <div class="topbar-actions">
+            <button type="button" class="profile-toggle" data-profile-toggle aria-expanded="false">
+              <span><%= user.full_name %></span><span class="profile-role"><%= user.role %></span>
+            </button>
+            <div class="profile-menu" data-profile-menu hidden>
+              <a href="/settings">Pengaturan akun</a><a href="/logout">Keluar</a>
             </div>
-          </form>
-        </div>
-
-        <div class="btn-row">
-          <a class="btn btn-primary" href="/performance/new">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-            <span>Tambah Data</span>
-          </a>
-        </div>
-
-        <div class="panel" style="margin-top:18px;">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Tanggal</th>
-                  <th>Admin</th>
-                  <th>Nama Tugas</th>
-                  <th>Status</th>
-                  <th>Pencapaian</th>
-                  <th>KPI</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% entries.forEach((entry) => { %>
-                  <tr>
-                    <td><%= entry.entry_date %></td>
-                    <td><%= entry.admin_name %></td>
-                    <td><%= entry.job_name %></td>
-                    <td>
-                      <span class="status-badge status-<%= entry.status === 'Selesai' ? 'selesai' : entry.status === 'Proses' ? 'proses' : entry.status === 'Terlambat' ? 'terlambat' : entry.status === 'Belum Selesai' ? 'belum' : 'tidak' %>"><%= entry.status %></span>
-                    </td>
-                    <td><%= entry.percentage || 0 %>%</td>
-                    <td><%= entry.kpi_score || 0 %></td>
-                    <td>
-                      <div class="btn-row" style="margin-top:0; gap:8px;">
-                        <a href="/performance/<%= entry.id %>/detail" class="action-btn" title="Detail" aria-label="Detail">
-                          <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-                        </a>
-                        <a href="/performance/<%= entry.id %>/edit" class="action-btn" title="Edit" aria-label="Edit">
-                          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>
-                        </a>
-                        <% if (isOwner) { %>
-                        <form action="/performance/delete/<%= entry.id %>" method="POST" style="display:inline;">
-                          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                          <button class="action-btn delete" type="submit" title="Hapus" aria-label="Hapus">
-                            <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                          </button>
-                        </form>
-                        <% } %>
-                      </div>
-                    </td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            </table>
           </div>
         </div>
+        <h1 class="page-title">Penilaian Kinerja Admin</h1>
+        <p class="muted">Pilih status untuk menyimpan penilaian. KPI mingguan dan bulanan hanya dinilai sekali pada periodenya.</p>
+
+        <form class="filter-bar" method="GET" action="/assessments">
+          <div class="filter-grid">
+            <div class="form-field">
+              <label for="assessment-admin">Nama admin</label>
+              <select id="assessment-admin" name="adminId" onchange="this.form.submit()" required>
+                <% if (!adminOptions.length) { %><option value="">Belum ada karyawan aktif</option><% } %>
+                <% adminOptions.forEach((admin) => { %>
+                  <option value="<%= admin.id %>" <%= String(filters.adminId || adminOptions[0]?.id || '') === String(admin.id) ? 'selected' : '' %>><%= admin.name %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="assessment-month">Bulan</label>
+              <select id="assessment-month" name="month" onchange="this.form.submit()">
+                <% for (let month = 1; month <= 12; month += 1) { %>
+                  <option value="<%= month %>" <%= Number(filters.month) === month ? 'selected' : '' %>><%= new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(new Date(2024, month - 1, 1)) %></option>
+                <% } %>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="assessment-year">Tahun</label>
+              <input id="assessment-year" type="number" name="year" value="<%= filters.year %>" min="2000" max="2100" onchange="this.form.submit()" />
+            </div>
+          </div>
+        </form>
+
+        <% if (!adminOptions.length) { %>
+          <div class="panel empty-state"><h3>Belum ada karyawan aktif</h3><p>Tambahkan karyawan terlebih dahulu untuk mulai menilai KPI.</p><a class="btn btn-primary" href="/admin/new">Tambah karyawan</a></div>
+        <% } else { %>
+          <% if (!assessmentData || !assessmentData.hasTasks) { %>
+            <div class="panel empty-state"><h3>Belum ada KPI untuk admin ini</h3><p>Tambahkan jobdesk pada halaman Manajemen Jobdesk. Riwayat penilaian bulan lain tetap tersimpan.</p><a class="btn btn-primary" href="/jobdesk">Kelola jobdesk</a></div>
+          <% } else { %>
+          <section class="stats-grid assessment-summary">
+            <article class="stat-card"><div class="stat-label">KPI wajib</div><div class="stat-value"><%= assessmentData.summary.required %></div></article>
+            <article class="stat-card"><div class="stat-label">Selesai</div><div class="stat-value"><%= assessmentData.summary.completed %></div></article>
+            <article class="stat-card"><div class="stat-label">Belum selesai</div><div class="stat-value"><%= assessmentData.summary.incomplete + assessmentData.summary.unassessed %></div></article>
+            <article class="stat-card"><div class="stat-label">Pencapaian</div><div class="stat-value"><%= assessmentData.summary.percent %>%</div></article>
+          </section>
+          <div class="assessment-toolbar">
+            <span class="muted">Geser tabel ke samping untuk melihat seluruh tanggal. Perubahan tersimpan otomatis.</span>
+            <span class="assessment-save-status" data-assessment-message role="status" aria-live="polite"></span>
+          </div>
+          <section class="panel assessment-panel">
+            <div class="table-wrap assessment-table-wrap">
+              <table class="assessment-table" data-assessment-grid data-csrf="<%= csrfToken %>" data-admin-id="<%= assessmentData.summary.admin_id %>">
+                <thead>
+                  <tr>
+                    <th class="sticky-kpi" rowspan="2">KPI / Jobdesk</th>
+                    <% assessmentData.calendarDays.forEach((day) => { %>
+                      <th class="assessment-date-heading" scope="colgroup"><%= day.day %></th>
+                    <% }) %>
+                  </tr>
+                  <tr>
+                    <% assessmentData.calendarDays.forEach((day) => { %>
+                      <th class="assessment-weekday"><%= day.weekday %></th>
+                    <% }) %>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% assessmentData.tasks.forEach((task) => { %>
+                    <tr>
+                      <th class="sticky-kpi" scope="row">
+                        <span><%= task.name %></span>
+                        <small><%= ({ daily: 'Harian', weekly: 'Mingguan', monthly: 'Bulanan' })[task.schedule_type] %> · Bobot <%= task.weight %></small>
+                      </th>
+                      <% task.cells.forEach((cell) => { %>
+                        <td class="assessment-cell <%= cell.isFuture ? 'is-future' : '' %>" data-period="<%= cell.periodKey %>">
+                          <select aria-label="<%= task.name %>, <%= cell.date %>" data-assessment-status
+                            data-jobdesk-id="<%= task.id %>" data-assessed-on="<%= cell.date %>"
+                            data-note="<%= cell.note %>" <%= cell.editable ? '' : 'disabled' %>>
+                            <option value="" <%= !cell.status ? 'selected' : '' %>>—</option>
+                            <option value="Selesai" <%= cell.status === 'Selesai' ? 'selected' : '' %>>✓</option>
+                            <option value="Belum Selesai" <%= cell.status === 'Belum Selesai' ? 'selected' : '' %>>✗</option>
+                          </select>
+                          <% if (cell.editable) { %>
+                            <button type="button" class="assessment-note-button" data-assessment-note aria-label="Ubah catatan" title="Ubah catatan"><%= cell.note ? 'Catatan' : '+' %></button>
+                          <% } %>
+                        </td>
+                      <% }) %>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <% } %>
+
+          <section class="panel audit-form-panel" id="audit-entry">
+            <div class="panel-header"><div><div class="muted">Pemeriksaan dan evaluasi</div><h3>Tambah catatan audit</h3></div></div>
+            <form method="POST" action="/assessments/audit" enctype="multipart/form-data" class="audit-form-grid">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <input type="hidden" name="admin_id" value="<%= assessmentData ? assessmentData.summary.admin_id : filters.adminId || adminOptions[0].id %>" />
+              <div class="form-field"><label for="audit-date">Tanggal</label><input id="audit-date" type="date" name="audit_date" value="<%= assessmentData ? (assessmentData.lastDate > new Date().toISOString().slice(0, 10) ? new Date().toISOString().slice(0, 10) : assessmentData.lastDate) : new Date().toISOString().slice(0, 10) %>" max="<%= new Date().toISOString().slice(0, 10) %>" required /></div>
+              <div class="form-field"><label for="audit-jobdesk">KPI terkait</label><select id="audit-jobdesk" name="jobdesk_id"><option value="">Umum</option><% if (assessmentData) assessmentData.tasks.forEach((task) => { %><option value="<%= task.id %>"><%= task.name %></option><% }) %></select></div>
+              <div class="form-field"><label for="audit-task">Aktivitas yang diperiksa</label><input id="audit-task" name="task_name" maxlength="200" required /></div>
+              <div class="form-field"><label for="audit-result">Hasil pemeriksaan</label><input id="audit-result" name="inspection_result" maxlength="1000" /></div>
+              <div class="form-field"><label for="audit-sop">Kesesuaian SOP</label><select id="audit-sop" name="sop_match"><option value="">Pilih</option><option>Sesuai</option><option>Tidak sesuai</option><option>Tidak berlaku</option></select></div>
+              <div class="form-field"><label for="audit-followup">Tindak lanjut</label><select id="audit-followup" name="follow_up_status"><option>Menunggu Pemeriksaan</option><option>Perlu Perbaikan</option><option>Tidak Lolos Audit</option><option>Selesai</option></select></div>
+              <div class="form-field"><label for="audit-findings">Temuan</label><textarea id="audit-findings" name="findings" maxlength="1000" rows="2"></textarea></div>
+              <div class="form-field"><label for="audit-recommendation">Rekomendasi</label><textarea id="audit-recommendation" name="recommendation" maxlength="1000" rows="2"></textarea></div>
+              <div class="form-field audit-evidence-field"><label for="audit-evidence">Bukti (opsional)</label><input id="audit-evidence" type="file" name="evidence" accept="image/jpeg,image/png,image/webp,application/pdf" /></div>
+              <div class="audit-form-actions"><button class="btn btn-primary" type="submit">Simpan catatan audit</button></div>
+            </form>
+          </section>
+
+          <section class="panel audit-table-panel" id="audit-history">
+            <div class="panel-header"><div><div class="muted">Riwayat hanya dapat dilihat</div><h3>History Audit & Perubahan Penilaian</h3></div><span class="audit-count"><%= assessmentData ? assessmentData.history.length + assessmentData.audits.length : 0 %> catatan</span></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Waktu</th><th>Pengguna</th><th>KPI / Aktivitas</th><th>Status sebelum</th><th>Status setelah</th><th>Keterangan / Bukti</th></tr></thead>
+                <tbody>
+                  <% if (assessmentData) assessmentData.history.forEach((item) => { %>
+                    <tr><td><%= item.created_at %></td><td><%= item.changed_by %></td><td><%= item.jobdesk_name %></td><td><%= item.old_status || 'Belum dinilai' %></td><td><%= item.new_status %></td><td><%= item.note || `Penilaian tanggal ${item.assessed_on}` %></td></tr>
+                  <% }) %>
+                  <% if (assessmentData) assessmentData.audits.forEach((item) => { %>
+                    <tr><td><%= item.created_at %></td><td><%= item.auditor || '—' %></td><td><%= item.job_name || item.task_name %></td><td>—</td><td><%= item.follow_up_status %></td><td><%= item.findings || item.inspection_result || '—' %><% if (item.evidence_path) { %> · <a href="<%= item.evidence_path %>" target="_blank" rel="noopener">Lihat bukti</a><% } %></td></tr>
+                  <% }) %>
+                  <% if (!assessmentData || (!assessmentData.history.length && !assessmentData.audits.length)) { %><tr><td colspan="6" class="muted audit-empty-state">Belum ada catatan audit atau perubahan pada periode ini.</td></tr><% } %>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        <% } %>
       </main>
     </div>
   </body>

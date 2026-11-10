@@ -2,6 +2,16 @@
 
 Aplikasi web internal untuk mencatat jobdesk, kinerja harian, audit, dan ringkasan KPI karyawan.
 
+## Riwayat pembaruan
+
+### 2026-11-10
+
+- Menggabungkan penilaian KPI harian, mingguan, dan bulanan dengan riwayat audit yang hanya-baca pada halaman Penilaian Kinerja Admin.
+- Mengubah dashboard dan laporan agar menggunakan data aktual, termasuk pencatatan omset per admin dan unit serta ekspor PDF dan Excel.
+- Menambahkan pengelolaan KPI dengan versioning agar perubahan tidak mengubah penilaian historis.
+- Memperluas akses operasional untuk owner dan admin, serta menambahkan migrasi skema aditif untuk penilaian, riwayat, unit, dan omset.
+- Memigrasikan database aktif setelah membuat cadangan; pemeriksaan integritas SQLite dan foreign key berhasil.
+
 ## Status kesiapan produksi
 
 Aplikasi ini sekarang memiliki baseline keamanan untuk deployment internal **satu server/satu proses**. Aplikasi belum dirancang untuk beberapa instance atau penggunaan dengan trafik tinggi: database masih memakai `sql.js` yang dimuat ke memori dan ditulis ulang ke disk setiap perubahan. Gunakan disk persisten lokal, jangan jalankan beberapa proses terhadap file database yang sama, dan rencanakan migrasi ke server database terkelola sebelum scale-out.
@@ -21,9 +31,10 @@ Header keamanan, token CSRF untuk perubahan data, rate limit login, cookie sesi 
 ## Konsep data
 
 - **Karyawan** adalah orang yang performanya dikelola. Tambahkan mereka secara manual melalui menu **Data Karyawan → Tambah Karyawan** sebelum membuat jobdesk, catatan kinerja, atau audit untuk mereka.
-- Role akun aplikasi hanya ada dua: **owner** (super admin) dan **admin** (akses operasional terbatas). Role tidak menunjukkan jabatan atau daftar karyawan.
-- **Owner** dapat mengelola karyawan dan pengaturan sistem, serta memiliki akses penuh.
-- **Admin** dapat melihat dashboard, mengelola jobdesk, mencatat/mengubah performa dan audit, serta melihat laporan, riwayat, dan ekspor. Admin tidak dapat mengelola data karyawan, mengubah pengaturan sistem, atau menghapus jobdesk/catatan performa.
+- Role akun aplikasi hanya ada dua: **owner** dan **admin/controller**. Keduanya memiliki akses operasional yang sama untuk mengelola karyawan, KPI/jobdesk, penilaian, audit, omset, laporan, ekspor, dan melihat riwayat perubahan. Role tidak menunjukkan jabatan atau daftar karyawan.
+- Pengaturan khusus akun tetap dibatasi: Owner dapat mereset sandi akun admin; setiap akun dapat mengganti sandinya sendiri. Sandi baru minimal 12 karakter.
+- **Penilaian Kinerja Admin** menggabungkan checklist KPI harian/mingguan/bulanan dan History Audit. History bersifat read-only; setiap perubahan penilaian dan data penting dicatat otomatis.
+- **Laporan Bulanan** menampilkan kewajiban KPI, penyelesaian, persentase, audit, dan omset yang dicatat terpisah dari KPI. Catatan omset dapat ditambah, diubah, dihapus, serta direkap berdasarkan karyawan dan HP/unit. Laporan dapat diunduh sebagai PDF atau Excel sesuai filter periode/admin/unit.
 - Setiap akun dapat mengganti sandinya di **Pengaturan Akun** dengan mengisi sandi saat ini. Owner juga dapat mereset sandi admin. Sandi baru minimal 12 karakter.
 - Menonaktifkan karyawan tidak menghapus catatan jobdesk, kinerja, atau audit historisnya.
 
@@ -78,10 +89,10 @@ Seed hanya dijalankan ketika file database belum ada atau kosong. Mengubah nilai
 1. Masuk dengan akun pengelola.
 2. Buka **Data Karyawan**, pilih **Tambah Karyawan**, lalu isi nama dan detail posisi/departemen bila tersedia.
 3. Tambahkan jobdesk untuk karyawan tersebut di **Manajemen Jobdesk**.
-4. Catat performa dan audit melalui menu terkait. Data karyawan aktif tersedia sebagai pilihan pada formulir.
+4. Nilai KPI dan catat audit melalui **Penilaian Kinerja Admin**. Masukkan omset harian dan lihat laporan melalui **Laporan Bulanan**.
 5. Edit atau nonaktifkan karyawan melalui tabel Data Karyawan. Penonaktifan mempertahankan data historis.
 
-Penambahan, pengeditan, dan perubahan status data karyawan hanya dapat dilakukan oleh akun dengan role aplikasi `owner`. Saat aplikasi berjalan setelah pembaruan, satu akun `owner` dan satu akun admin lama dipertahankan sesuai username pada `.env`. Akun login lain dihapus agar hanya tersisa dua akun; data karyawan, jobdesk, performa, audit, dan riwayat tetap dipertahankan. Pada migrasi akun pertama, username dan sandi akun owner/admin diselaraskan sekali dengan konfigurasi `.env`; setelah itu, perubahan sandi melalui aplikasi tidak ditimpa saat restart.
+Penambahan, pengeditan, dan perubahan status data karyawan dapat dilakukan oleh kedua role operasional. Karyawan yang belum memiliki penilaian, audit, omset, atau transaksi terkait dapat dihapus; data yang sudah memiliki riwayat perlu dinonaktifkan agar relasi historis tetap terjaga. KPI yang sudah pernah dinilai juga dinonaktifkan atau dibuatkan versi baru, sehingga penilaian lama tidak ikut berubah. Saat aplikasi berjalan setelah pembaruan, satu akun `owner` dan satu akun admin lama dipertahankan sesuai username pada `.env`. Akun login lain dihapus agar hanya tersisa dua akun; data karyawan, jobdesk, performa, audit, dan riwayat tetap dipertahankan. Pada migrasi akun pertama, username dan sandi akun owner/admin diselaraskan sekali dengan konfigurasi `.env`; setelah itu, perubahan sandi melalui aplikasi tidak ditimpa saat restart.
 
 ## Data dan backup
 

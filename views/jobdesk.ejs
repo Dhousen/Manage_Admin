@@ -12,8 +12,7 @@
         <ul class="nav-list">
           <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
           <li class="nav-item"><a href="/admins">Data Karyawan</a></li>
-          <li class="nav-item"><a href="/performance">Kinerja Harian</a></li>
-          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
+          <li class="nav-item"><a href="/assessments">Penilaian Kinerja Admin</a></li>
           <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
           <li class="nav-item"><a class="active" href="/jobdesk">Manajemen Jobdesk</a></li>
           <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
@@ -24,8 +23,11 @@
       </aside>
       <main class="content">
         <div class="topbar">
-          <div><div class="muted">Halo, <%= user.full_name %></div><strong><%= user.role %></strong></div>
-          <div class="user-meta">Jobdesk</div>
+          <div class="topbar-leading"><div class="muted">Atur KPI per karyawan</div></div>
+          <div class="topbar-actions">
+            <button type="button" class="profile-toggle" data-profile-toggle aria-expanded="false"><span><%= user.full_name %></span><span class="profile-role"><%= user.role %></span></button>
+            <div class="profile-menu" data-profile-menu hidden><a href="/settings">Pengaturan akun</a><a href="/logout">Keluar</a></div>
+          </div>
         </div>
         <h1 class="page-title">Manajemen Jobdesk</h1>
         <% if (!adminOptions.length) { %>
@@ -35,12 +37,13 @@
         <div class="panel jobdesk-form-panel">
           <div class="panel-header">
             <div>
-              <div class="muted">Tetapkan target, frekuensi, dan bobot kinerja</div>
-              <h3>Tambah / Edit Jobdesk</h3>
+              <div class="muted">Tetapkan target, frekuensi, dan bobot kinerja per karyawan</div>
+              <h3><%= editJobdesk ? 'Ubah KPI' : 'Tambah KPI' %></h3>
             </div>
           </div>
           <form method="POST" action="/jobdesk/save">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <input type="hidden" name="id" value="<%= editJobdesk ? editJobdesk.id : '' %>" />
             <div class="form-grid jobdesk-form-grid">
               <div class="form-field">
                 <label>Karyawan</label>
@@ -49,45 +52,46 @@
                     <option value="" selected disabled>Tambahkan karyawan terlebih dahulu</option>
                   <% } %>
                   <% adminOptions.forEach((admin) => { %>
-                    <option value="<%= admin.id %>"><%= admin.name %></option>
+                    <option value="<%= admin.id %>" <%= editJobdesk && Number(editJobdesk.admin_id) === Number(admin.id) ? 'selected' : '' %>><%= admin.name %></option>
                   <% }) %>
                 </select>
               </div>
               <div class="form-field">
                 <label>Nama Jobdesk</label>
-                <input type="text" name="name" required />
+                <input type="text" name="name" maxlength="180" value="<%= editJobdesk ? editJobdesk.name : '' %>" required />
               </div>
               <div class="form-field">
                 <label>Target Harian</label>
-                <input type="number" name="target_value" value="1" step="0.1" />
+                <input type="number" name="target_value" value="<%= editJobdesk ? editJobdesk.target_value : 1 %>" min="0" step="0.1" required />
               </div>
               <div class="form-field">
                 <label>Target Mingguan</label>
-                <input type="number" name="weekly_target" value="1" step="0.1" />
+                <input type="number" name="weekly_target" value="<%= editJobdesk ? editJobdesk.weekly_target : 1 %>" min="0" step="0.1" required />
               </div>
               <div class="form-field">
                 <label>Target Bulanan</label>
-                <input type="number" name="monthly_target" value="1" step="0.1" />
+                <input type="number" name="monthly_target" value="<%= editJobdesk ? editJobdesk.monthly_target : 1 %>" min="0" step="0.1" required />
               </div>
               <div class="form-field">
                 <label>Bobot KPI</label>
-                <input type="number" name="weight" value="10" />
+                <input type="number" name="weight" value="<%= editJobdesk ? editJobdesk.weight : 10 %>" min="0" max="100" step="1" required />
               </div>
               <div class="form-field">
                 <label>Frekuensi</label>
                 <select name="schedule_type">
-                  <option value="daily">Setiap hari</option>
-                  <option value="weekly">Mingguan</option>
-                  <option value="monthly">Bulanan</option>
+                  <option value="daily" <%= !editJobdesk || editJobdesk.schedule_type === 'daily' ? 'selected' : '' %>>Setiap hari</option>
+                  <option value="weekly" <%= editJobdesk && editJobdesk.schedule_type === 'weekly' ? 'selected' : '' %>>Mingguan</option>
+                  <option value="monthly" <%= editJobdesk && editJobdesk.schedule_type === 'monthly' ? 'selected' : '' %>>Bulanan</option>
                 </select>
               </div>
               <div class="form-field">
                 <label>Batas Waktu</label>
-                <input type="time" name="due_time" value="09:00" />
+                <input type="time" name="due_time" value="<%= editJobdesk ? editJobdesk.due_time || '' : '09:00' %>" />
               </div>
             </div>
             <div class="btn-row">
-              <button class="btn btn-primary" type="submit">Simpan Jobdesk</button>
+              <button class="btn btn-primary" type="submit"><%= editJobdesk ? 'Simpan Perubahan' : 'Simpan KPI' %></button>
+              <% if (editJobdesk) { %><a class="btn btn-secondary" href="/jobdesk">Batal</a><% } %>
             </div>
           </form>
         </div>
@@ -100,6 +104,13 @@
             </div>
             <span class="jobdesk-count"><%= jobdesks.length %> jobdesk</span>
           </div>
+          <form method="GET" action="/jobdesk" class="jobdesk-filter">
+            <label for="jobdesk-admin-filter">Tampilkan KPI karyawan</label>
+            <select id="jobdesk-admin-filter" name="adminId" onchange="this.form.submit()">
+              <option value="">Semua karyawan</option>
+              <% adminOptions.forEach((admin) => { %><option value="<%= admin.id %>" <%= String(selectedAdminId) === String(admin.id) ? 'selected' : '' %>><%= admin.name %></option><% }) %>
+            </select>
+          </form>
           <div class="table-wrap">
             <table>
             <thead>
@@ -109,6 +120,7 @@
                 <th>Target</th>
                 <th>Bobot</th>
                 <th>Frekuensi</th>
+                <th>Status</th>
                 <th>Aksi</th>
               </tr>
             </thead>
@@ -120,19 +132,35 @@
                   <td><%= job.target_value || 0 %></td>
                   <td><%= job.weight || 0 %></td>
                   <td><%= ({ daily: 'Setiap hari', weekly: 'Mingguan', monthly: 'Bulanan' })[job.schedule_type] || job.schedule_type %></td>
+                  <td><%= Number(job.is_active) === 1 ? 'Aktif' : 'Nonaktif' %></td>
                   <td>
-                    <% if (isOwner) { %>
-                    <form action="/jobdesk/delete/<%= job.id %>" method="POST" style="display:inline;">
+                    <% if (canManage) { %>
+                    <div class="btn-row compact-actions">
+                    <a class="action-btn" href="/jobdesk?edit=<%= job.id %>" title="Ubah KPI">Ubah</a>
+                    <form action="/jobdesk/reorder/<%= job.id %>" method="POST">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" /><input type="hidden" name="direction" value="up" />
+                      <button class="action-btn" type="submit" title="Naikkan urutan">↑</button>
+                    </form>
+                    <form action="/jobdesk/reorder/<%= job.id %>" method="POST">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" /><input type="hidden" name="direction" value="down" />
+                      <button class="action-btn" type="submit" title="Turunkan urutan">↓</button>
+                    </form>
+                    <form action="/jobdesk/status/<%= job.id %>" method="POST">
                       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                      <button class="action-btn delete" type="submit" title="Hapus" aria-label="Hapus">
+                      <button class="action-btn" type="submit"><%= Number(job.is_active) === 1 ? 'Nonaktifkan' : 'Aktifkan' %></button>
+                    </form>
+                    <form action="/jobdesk/delete/<%= job.id %>" method="POST">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <button class="action-btn delete" type="submit" title="Hapus / nonaktifkan" aria-label="Hapus atau nonaktifkan" onclick="return confirm('Jobdesk yang memiliki riwayat akan dinonaktifkan, bukan dihapus. Lanjutkan?')">
                         <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
                       </button>
                     </form>
-                    <% } %>
+                    </div>
+                    <% } else { %>—<% } %>
                   </td>
                 </tr>
               <% }) } else { %>
-                <tr><td colspan="6" class="muted jobdesk-empty-state">Belum ada jobdesk. Gunakan formulir di atas untuk menambahkan tugas karyawan.</td></tr>
+                <tr><td colspan="7" class="muted jobdesk-empty-state">Belum ada jobdesk. Gunakan formulir di atas untuk menambahkan tugas karyawan.</td></tr>
               <% } %>
             </tbody>
             </table>

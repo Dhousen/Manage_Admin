@@ -12,8 +12,7 @@
         <ul class="nav-list">
           <li class="nav-item"><a class="active" href="/dashboard">Dashboard</a></li>
           <li class="nav-item"><a href="/admins">Data Karyawan</a></li>
-          <li class="nav-item"><a href="/performance">Kinerja Harian</a></li>
-          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
+          <li class="nav-item"><a href="/assessments">Penilaian Kinerja Admin</a></li>
           <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
           <li class="nav-item"><a href="/jobdesk">Manajemen Jobdesk</a></li>
           <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
@@ -24,9 +23,12 @@
       </aside>
       <main class="content">
         <div class="topbar">
-          <div>
-            <div class="muted">Halo, <%= user.full_name %></div>
-            <strong><%= user.role %></strong>
+          <div class="topbar-leading"><div class="muted">Dashboard operasional · <%= dashboard.filters.month %>/<%= dashboard.filters.year %></div></div>
+          <div class="topbar-actions">
+            <button type="button" class="profile-toggle" data-profile-toggle aria-expanded="false">
+              <span><%= user.full_name %></span><span class="profile-role"><%= user.role %></span>
+            </button>
+            <div class="profile-menu" data-profile-menu hidden><a href="/settings">Pengaturan akun</a><a href="/logout">Keluar</a></div>
           </div>
         </div>
 
@@ -64,16 +66,6 @@
                 <% }) %>
               </select>
             </div>
-            <div class="form-field">
-              <label>Status</label>
-              <select name="status" onchange="this.form.submit()">
-                <option value="">Semua</option>
-                <option value="Selesai" <%= dashboard.filters.status === 'Selesai' ? 'selected' : '' %>>Selesai</option>
-                <option value="Proses" <%= dashboard.filters.status === 'Proses' ? 'selected' : '' %>>Proses</option>
-                <option value="Belum Selesai" <%= dashboard.filters.status === 'Belum Selesai' ? 'selected' : '' %>>Belum Selesai</option>
-                <option value="Terlambat" <%= dashboard.filters.status === 'Terlambat' ? 'selected' : '' %>>Terlambat</option>
-              </select>
-            </div>
           </div>
         </form>
 
@@ -83,9 +75,9 @@
               <svg viewBox="0 0 24 24"><path d="M4 5h16v15H4z"/><path d="M8 3v4M16 3v4M4 9h16"/><path d="m8 14 2 2 5-5"/></svg>
             </div>
             <div class="stat-content">
-              <div class="stat-label">Total pekerjaan</div>
-              <div class="stat-value"><%= dashboard.totalTasks %></div>
-              <div class="stat-trend">Periode terpilih</div>
+              <div class="stat-label">Total KPI aktif</div>
+              <div class="stat-value"><%= dashboard.totalKpis %></div>
+              <div class="stat-trend"><%= dashboard.totalTasks %> kewajiban pada periode terpilih</div>
             </div>
           </div>
           <div class="stat-card stat-card-compact">
@@ -108,11 +100,21 @@
               <div class="stat-trend">Skor keseluruhan karyawan</div>
             </div>
           </div>
+          <div class="stat-card stat-card-compact">
+            <div class="stat-icon stat-icon-amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3v18M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Total omset bulanan</div>
+              <div class="stat-value">Rp <%= Number(dashboard.totalRevenue).toLocaleString('id-ID') %></div>
+              <div class="stat-trend">Hari ini Rp <%= Number(dashboard.todayRevenue).toLocaleString('id-ID') %> · <%= dashboard.totalTransactions %> transaksi bulan ini</div>
+            </div>
+          </div>
         </div>
 
         <%
-          const chartLabels = dashboard.monthlyTrend.length ? dashboard.monthlyTrend.map((item) => item.month_label || 'N/A') : ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'];
-          const chartValues = dashboard.monthlyTrend.length ? dashboard.monthlyTrend.map((item) => Number(item.avg_kpi || 0)) : [62, 68, 74, 81, 76, 89];
+          const chartLabels = dashboard.monthlyTrend.map((item) => item.month_label);
+          const chartValues = dashboard.monthlyTrend.map((item) => Number(item.avg_kpi || 0));
         %>
 
         <div class="dashboard-panels">
@@ -145,7 +147,7 @@
                 <div class="muted">Tindak lanjut</div>
                 <h3>Ringkasan audit</h3>
               </div>
-              <a class="panel-link" href="/audit">Lihat audit</a>
+              <a class="panel-link" href="/assessments#audit-history">Lihat history audit</a>
             </div>
             <div class="audit-summary">
               <span class="audit-summary-icon" aria-hidden="true">
@@ -170,7 +172,9 @@
               </div>
               <span class="kpi-pill"><%= dashboard.kpiAverage %>%</span>
             </div>
-            <div class="chart-wrap" data-chart data-chart-labels='<%= JSON.stringify(chartLabels) %>' data-chart-values='<%= JSON.stringify(chartValues) %>'></div>
+            <% if (chartLabels.length) { %>
+              <div class="chart-wrap" data-chart data-chart-max="100" data-chart-labels='<%= JSON.stringify(chartLabels) %>' data-chart-values='<%= JSON.stringify(chartValues) %>'></div>
+            <% } else { %><div class="empty-state">Belum ada data KPI yang dinilai pada periode ini.</div><% } %>
           </section>
           <section class="panel chart-panel">
             <div class="panel-header">
@@ -180,9 +184,18 @@
               </div>
               <span class="chart-legend"><span></span> KPI</span>
             </div>
-            <div class="chart-wrap" data-chart data-chart-type="bar" data-chart-labels='<%= JSON.stringify(dashboard.byAdmin.map((entry) => entry.name)) %>' data-chart-values='<%= JSON.stringify(dashboard.byAdmin.map((entry) => Number(entry.avg_kpi || 0))) %>'></div>
+            <% if (dashboard.byAdmin.some((entry) => entry.required > 0)) { %>
+              <div class="chart-wrap" data-chart data-chart-type="bar" data-chart-max="100" data-chart-labels='<%= JSON.stringify(dashboard.byAdmin.map((entry) => entry.name)) %>' data-chart-values='<%= JSON.stringify(dashboard.byAdmin.map((entry) => Number(entry.avg_kpi || 0))) %>'></div>
+            <% } else { %><div class="empty-state">Belum ada data penilaian untuk dibandingkan.</div><% } %>
           </section>
         </div>
+
+        <section class="panel dashboard-panel">
+          <div class="panel-header"><div><div class="muted">Omset berdasarkan tanggal</div><h3>Grafik omset harian</h3></div><a class="panel-link" href="/reports">Buka laporan</a></div>
+          <% if (dashboard.revenue.daily.length) { %>
+            <div class="chart-wrap" data-chart data-chart-type="bar" data-chart-unit="Rp" data-chart-labels='<%= JSON.stringify(dashboard.revenue.daily.map((item) => item[0].slice(8))) %>' data-chart-values='<%= JSON.stringify(dashboard.revenue.daily.map((item) => item[1])) %>'></div>
+          <% } else { %><div class="empty-state">Belum ada omset pada bulan yang dipilih.</div><% } %>
+        </section>
 
         <div class="panel dashboard-table-panel">
           <div class="panel-header">
@@ -198,6 +211,8 @@
                 <tr>
                   <th>Nama Karyawan</th>
                   <th>Rata-rata KPI</th>
+                  <th>KPI selesai</th>
+                  <th>Omset bulanan</th>
                 </tr>
               </thead>
               <tbody>
@@ -205,8 +220,11 @@
                   <tr>
                     <td><%= entry.name %></td>
                     <td><%= entry.avg_kpi || 0 %>%</td>
+                    <td><%= entry.completed %> / <%= entry.required %></td>
+                    <td>Rp <%= Number(dashboard.revenue.byAdmin.find((item) => Number(item.admin_id) === Number(entry.admin_id))?.amount || 0).toLocaleString('id-ID') %></td>
                   </tr>
                 <% }) %>
+                <% if (!dashboard.byAdmin.length) { %><tr><td colspan="4" class="muted">Belum ada karyawan aktif.</td></tr><% } %>
               </tbody>
             </table>
           </div>

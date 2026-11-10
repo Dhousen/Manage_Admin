@@ -1,10 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= pageTitle %> | APMS</title>
-    <link rel="stylesheet" href="/public/styles.css" /><script src="/public/app.js" defer></script>
+    <link rel="stylesheet" href="/public/styles.css" />
+    <script src="/public/app.js" defer></script>
   </head>
   <body>
     <div class="app-shell">
@@ -12,50 +13,130 @@
         <ul class="nav-list">
           <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
           <li class="nav-item"><a href="/admins">Data Karyawan</a></li>
-          <li class="nav-item"><a href="/performance">Kinerja Harian</a></li>
-          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
-          <li class="nav-item"><a class="active" href="/reports">Laporan Bulanan</a></li>
+          <li class="nav-item"><a href="/assessments">Penilaian Kinerja Admin</a></li>
           <li class="nav-item"><a href="/jobdesk">Manajemen Jobdesk</a></li>
+          <li class="nav-item"><a class="active" href="/reports">Laporan Bulanan</a></li>
           <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
-          <li class="nav-item"><a href="/export">Export Google Sheets</a></li>
           <li class="nav-item"><a href="/settings">Pengaturan Akun</a></li>
           <li class="nav-item"><a href="/logout">Logout</a></li>
         </ul>
       </aside>
       <main class="content">
         <div class="topbar">
-          <div><div class="muted">Halo, <%= user.full_name %></div><strong><%= user.role %></strong></div>
-          <div class="user-meta">Laporan Bulanan</div>
+          <div class="topbar-leading"><div class="muted">Laporan penilaian KPI dan omset aktual</div></div>
+          <div class="topbar-actions">
+            <button type="button" class="profile-toggle" data-profile-toggle aria-expanded="false">
+              <span><%= user.full_name %></span><span class="profile-role"><%= user.role %></span>
+            </button>
+            <div class="profile-menu" data-profile-menu hidden><a href="/settings">Pengaturan akun</a><a href="/logout">Keluar</a></div>
+          </div>
         </div>
         <h1 class="page-title">Laporan Bulanan</h1>
-        <div class="panel">
-          <table>
-            <thead>
-              <tr>
-                <th>Nama Karyawan</th>
-                <th>Total Hari</th>
-                <th>Total Tugas</th>
-                <th>Selesai</th>
-                <th>Terlambat</th>
-                <th>Rata-rata KPI</th>
-                <th>Temuan Audit</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% reportData.forEach((row) => { %>
-                <tr>
-                  <td><%= row.admin_name %></td>
-                  <td><%= row.total_days || 0 %></td>
-                  <td><%= row.total_tasks || 0 %></td>
-                  <td><%= row.total_done || 0 %></td>
-                  <td><%= row.total_late || 0 %></td>
-                  <td><%= row.avg_kpi || 0 %>%</td>
-                  <td><%= row.findings || 0 %></td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
+        <form class="filter-bar" method="GET" action="/reports">
+          <div class="filter-grid">
+            <div class="form-field"><label for="report-month">Bulan</label><select id="report-month" name="month"><% for (let month = 1; month <= 12; month += 1) { %><option value="<%= month %>" <%= Number(filters.month) === month ? 'selected' : '' %>><%= new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(new Date(2024, month - 1, 1)) %></option><% } %></select></div>
+            <div class="form-field"><label for="report-year">Tahun</label><input id="report-year" type="number" name="year" value="<%= filters.year %>" min="2000" max="2100" /></div>
+            <div class="form-field"><label for="report-admin">Nama admin</label><select id="report-admin" name="adminId"><option value="">Semua admin</option><% adminOptions.forEach((admin) => { %><option value="<%= admin.id %>" <%= String(filters.adminId) === String(admin.id) ? 'selected' : '' %>><%= admin.name %></option><% }) %></select></div>
+            <div class="form-field"><label for="report-unit">HP / Unit</label><select id="report-unit" name="unitId"><option value="">Semua unit</option><% units.forEach((unit) => { %><option value="<%= unit.id %>" <%= String(filters.unitId) === String(unit.id) ? 'selected' : '' %>><%= unit.name %></option><% }) %></select></div>
+            <div class="form-field filter-submit"><label>&nbsp;</label><button class="btn btn-primary" type="submit">Tampilkan laporan</button></div>
+          </div>
+        </form>
+
+        <% if (notice === 'revenueSaved') { %><div class="notice notice-success" role="status">Catatan omset berhasil disimpan.</div><% } %>
+        <div class="btn-row report-export-actions">
+          <a class="btn btn-primary" href="/reports/export/pdf?month=<%= filters.month %>&year=<%= filters.year %>&adminId=<%= encodeURIComponent(filters.adminId) %>&unitId=<%= encodeURIComponent(filters.unitId) %>">Unduh PDF</a>
+          <a class="btn btn-secondary" href="/reports/export/excel?month=<%= filters.month %>&year=<%= filters.year %>&adminId=<%= encodeURIComponent(filters.adminId) %>&unitId=<%= encodeURIComponent(filters.unitId) %>">Unduh Excel</a>
         </div>
+
+        <section class="stats-grid assessment-summary">
+          <article class="stat-card"><div class="stat-label">Total KPI wajib</div><div class="stat-value"><%= report.kpi.totals.required %></div></article>
+          <article class="stat-card"><div class="stat-label">Selesai</div><div class="stat-value"><%= report.kpi.totals.completed %></div></article>
+          <article class="stat-card"><div class="stat-label">Belum selesai / dinilai</div><div class="stat-value"><%= report.kpi.totals.incomplete + report.kpi.totals.unassessed %></div></article>
+          <article class="stat-card"><div class="stat-label">Omset periode</div><div class="stat-value report-currency">Rp <%= Number(report.revenue.totalAmount).toLocaleString('id-ID') %></div></article>
+        </section>
+
+        <section class="panel report-panel">
+          <div class="panel-header"><div><div class="muted">Rangkuman per karyawan</div><h3>Evaluasi Kinerja</h3></div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nama admin</th><th>KPI wajib</th><th>Selesai</th><th>Belum selesai</th><th>Belum dinilai</th><th>Pencapaian</th><th>Omset</th><th>Audit / temuan</th><th>Kesimpulan</th></tr></thead>
+              <tbody>
+                <% if (report.summaries.length) { report.summaries.forEach((row) => { %>
+                  <tr><td><%= row.name %></td><td><%= row.required %></td><td><%= row.completed %></td><td><%= row.incomplete %></td><td><%= row.unassessed %></td><td><%= row.percent %>%</td><td>Rp <%= Number(row.total_revenue).toLocaleString('id-ID') %></td><td><%= row.audit_count %> / <%= row.findings %></td><td><%= row.conclusion %></td></tr>
+                <% }) } else { %><tr><td colspan="9" class="muted audit-empty-state">Belum ada data karyawan untuk ditampilkan.</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="dashboard-charts report-charts">
+          <section class="panel dashboard-panel">
+            <div class="panel-header"><div><div class="muted">Periode terpilih</div><h3>Perkembangan KPI</h3></div></div>
+            <% if (report.kpi.dailyTrend.length) { %>
+              <div class="chart-wrap" data-chart="kpi" data-chart-type="line" data-chart-max="100" data-chart-labels="<%= JSON.stringify(report.kpi.dailyTrend.map((item) => item.month_label)) %>" data-chart-values="<%= JSON.stringify(report.kpi.dailyTrend.map((item) => item.avg_kpi)) %>"></div>
+            <% } else { %><div class="empty-state">Belum ada penilaian KPI pada periode ini.</div><% } %>
+          </section>
+          <section class="panel dashboard-panel">
+            <div class="panel-header"><div><div class="muted">Omset per hari</div><h3>Perkembangan Omset</h3></div></div>
+            <% if (report.revenue.daily.length) { %>
+              <div class="chart-wrap" data-chart="revenue" data-chart-type="bar" data-chart-unit="Rp" data-chart-labels="<%= JSON.stringify(report.revenue.daily.map((item) => item[0].slice(8))) %>" data-chart-values="<%= JSON.stringify(report.revenue.daily.map((item) => item[1])) %>"></div>
+            <% } else { %><div class="empty-state">Belum ada omset pada periode ini.</div><% } %>
+          </section>
+        </div>
+
+        <section class="panel report-panel">
+          <div class="panel-header"><div><div class="muted">Hasil per tanggal dan KPI</div><h3>Detail Penilaian</h3></div></div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Tanggal wajib</th><th>Tanggal dinilai</th><th>Admin</th><th>KPI</th><th>Frekuensi</th><th>Status</th><th>Catatan</th></tr></thead>
+              <tbody>
+                <% if (report.kpi.obligations.length) { report.kpi.obligations.forEach((item) => { %>
+                  <tr><td><%= item.due_date %></td><td><%= item.assessed_on || '—' %></td><td><%= item.admin_name %></td><td><%= item.job_name %></td><td><%= ({ daily: 'Harian', weekly: 'Mingguan', monthly: 'Bulanan' })[item.period_type] %></td><td><%= item.status || 'Belum dinilai' %></td><td><%= item.note || '—' %></td></tr>
+                <% }) } else { %><tr><td colspan="7" class="muted audit-empty-state">Belum ada kewajiban KPI pada periode ini.</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel report-panel" id="revenue">
+          <div class="panel-header"><div><div class="muted">Pencatatan terpisah dari nilai KPI</div><h3><%= revenueToEdit ? 'Ubah catatan omset' : 'Input Omset Harian' %></h3></div></div>
+          <form method="POST" action="/revenue/save" class="revenue-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <input type="hidden" name="id" value="<%= revenueToEdit ? revenueToEdit.id : '' %>" />
+            <input type="hidden" name="request_key" value="<%= requestKey %>" />
+            <div class="form-grid">
+              <div class="form-field"><label for="revenue-date">Tanggal</label><input id="revenue-date" type="date" name="entry_date" value="<%= revenueToEdit ? revenueToEdit.entry_date : new Date().toISOString().slice(0, 10) %>" max="<%= new Date().toISOString().slice(0, 10) %>" required /></div>
+              <div class="form-field"><label for="revenue-admin">Nama admin</label><select id="revenue-admin" name="admin_id" required><% adminOptions.forEach((admin) => { %><option value="<%= admin.id %>" <%= String((revenueToEdit && revenueToEdit.admin_id) || filters.adminId || adminOptions[0]?.id || '') === String(admin.id) ? 'selected' : '' %>><%= admin.name %></option><% }) %></select></div>
+              <div class="form-field"><label for="revenue-unit">HP / Unit</label><input id="revenue-unit" name="unit_name" list="revenue-units" maxlength="100" value="<%= revenueToEdit ? units.find((unit) => Number(unit.id) === Number(revenueToEdit.unit_id))?.name || '' : '' %>" required /><datalist id="revenue-units"><% units.forEach((unit) => { %><option value="<%= unit.name %>"></option><% }) %></datalist></div>
+              <div class="form-field"><label for="revenue-transactions">Jumlah transaksi</label><input id="revenue-transactions" type="number" name="transaction_count" min="0" step="1" value="<%= revenueToEdit ? revenueToEdit.transaction_count : 1 %>" required /></div>
+              <div class="form-field"><label for="revenue-amount">Nominal omset (Rp)</label><input id="revenue-amount" type="number" name="amount_rupiah" min="0" step="1" value="<%= revenueToEdit ? revenueToEdit.amount_rupiah : '' %>" required /></div>
+              <div class="form-field"><label for="revenue-note">Catatan</label><input id="revenue-note" name="note" maxlength="1000" value="<%= revenueToEdit ? revenueToEdit.note || '' : '' %>" /></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-primary" type="submit"><%= revenueToEdit ? 'Simpan perubahan' : 'Simpan omset' %></button><% if (revenueToEdit) { %><a class="btn btn-secondary" href="/reports?month=<%= filters.month %>&year=<%= filters.year %>&adminId=<%= filters.adminId %>#revenue">Batal</a><% } %></div>
+          </form>
+        </section>
+
+        <section class="panel report-panel">
+          <div class="panel-header"><div><div class="muted">Ringkasan unit perangkat</div><h3>Omset per HP / Unit</h3></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Unit</th><th>Total omset</th></tr></thead><tbody>
+            <% if (report.byUnit.length) { report.byUnit.forEach((unit) => { %><tr><td><%= unit.name %></td><td>Rp <%= Number(unit.amount).toLocaleString('id-ID') %></td></tr><% }) } else { %><tr><td colspan="2" class="muted audit-empty-state">Belum ada data omset untuk periode ini.</td></tr><% } %>
+          </tbody></table></div>
+        </section>
+
+        <section class="panel report-panel">
+          <div class="panel-header"><div><div class="muted">Agregasi per pekan ISO</div><h3>Omset Mingguan</h3></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Pekan</th><th>Total omset</th></tr></thead><tbody>
+            <% if (report.revenue.byWeek.length) { report.revenue.byWeek.forEach((week) => { %><tr><td><%= week[0].replace('weekly:', '') %></td><td>Rp <%= Number(week[1]).toLocaleString('id-ID') %></td></tr><% }) } else { %><tr><td colspan="2" class="muted audit-empty-state">Belum ada data omset mingguan.</td></tr><% } %>
+          </tbody></table></div>
+        </section>
+
+        <section class="panel report-panel">
+          <div class="panel-header"><div><div class="muted">Data transaksi aktual</div><h3>Riwayat Omset</h3></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Admin</th><th>Unit</th><th>Transaksi</th><th>Omset</th><th>Catatan</th><th>Aksi</th></tr></thead><tbody>
+            <% if (report.revenue.entries.length) { report.revenue.entries.forEach((entry) => { %>
+              <tr><td><%= entry.entry_date %></td><td><%= entry.admin_name %></td><td><%= entry.unit_name %></td><td><%= entry.transaction_count %></td><td>Rp <%= Number(entry.amount_rupiah).toLocaleString('id-ID') %></td><td><%= entry.note || '—' %></td><td><div class="btn-row compact-actions"><a class="action-btn" href="/reports?month=<%= filters.month %>&year=<%= filters.year %>&adminId=<%= filters.adminId %>&unitId=<%= filters.unitId %>&editRevenueId=<%= entry.id %>#revenue">Ubah</a><form method="POST" action="/revenue/<%= entry.id %>/delete"><input type="hidden" name="_csrf" value="<%= csrfToken %>" /><button class="action-btn delete" type="submit" onclick="return confirm('Hapus catatan omset ini?')">Hapus</button></form></div></td></tr>
+            <% }) } else { %><tr><td colspan="7" class="muted audit-empty-state">Belum ada catatan omset. Tambahkan transaksi pada formulir di atas.</td></tr><% } %>
+          </tbody></table></div>
+        </section>
       </main>
     </div>
   </body>

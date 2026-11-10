@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const net = require('node:net');
@@ -6,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { setTimeout: delay } = require('node:timers/promises');
 const { test } = require('node:test');
+const XLSX = require('@e965/xlsx');
 
 const rootDir = path.resolve(__dirname, '..');
 
@@ -48,7 +50,7 @@ async function waitForApplication(child, url) {
   let lastError;
   for (let attempt = 0; attempt < 80; attempt += 1) {
     if (child.exitCode !== null) {
-      throw new Error(`Application exited early: ${lastError || 'no startup response'}`);
+      throw new Error(`Application exited early: ${lastError || 'no startup response'}\n${child.stderrLog}`);
     }
     try {
       const response = await fetch(`${url}/health`);
@@ -136,6 +138,107 @@ test('protects login, forms, sessions, and uploaded evidence', async (t) => {
   const auditPage = await fetch(`${url}/audit`, { headers: { Cookie: authenticatedCookie } });
   assert.equal(auditPage.status, 200);
   const auditToken = getCsrfToken(await auditPage.text());
+  const employeeCreated = await fetch(`${url}/admin`, {
+    method: 'POST',
+    redirect: 'manual',
+    headers: { Cookie: authenticatedCookie, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ _csrf: auditToken, name: 'Security test employee' })
+  });
+  assert.equal(employeeCreated.status, 302, 'admin role should be allowed to manage employee records');
+  const jobdeskCreated = await fetch(`${url}/jobdesk/save`, {
+    method: 'POST',
+    redirect: 'manual',
+    headers: { Cookie: authenticatedCookie, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      _csrf: auditToken,
+      admin_id: '1',
+      name: 'Daily response KPI',
+      target_value: '1',
+      weekly_target: '1',
+      monthly_target: '1',
+      weight: '10',
+      schedule_type: 'daily',
+      due_time: '09:00'
+    })
+  });
+  assert.equal(jobdeskCreated.status, 302);
+  const today = new Date().toISOString().slice(0, 10);
+  const assessmentResponse = await fetch(`${url}/assessments/save`, {
+    method: 'POST',
+    headers: { Cookie: authenticatedCookie, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      _csrf: auditToken,
+      admin_id: 1,
+      jobdesk_id: 1,
+      assessed_on: today,
+      status: 'Selesai',
+      note: 'Verified'
+    })
+  });
+  assert.equal(assessmentResponse.status, 200);
+  assert.equal((await assessmentResponse.json()).status, 'Selesai');
+  const revisedKpi = await fetch(`${url}/jobdesk/save`, {
+    method: 'POST',
+    redirect: 'manual',
+    headers: { Cookie: authenticatedCookie, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      _csrf: auditToken,
+      id: '1',
+      admin_id: '1',
+      name: 'Daily response KPI revised',
+      target_value: '1',
+      weekly_target: '1',
+      monthly_target: '1',
+      weight: '10',
+      schedule_type: 'daily',
+      due_time: '09:00'
+    })
+  });
+  assert.equal(revisedKpi.status, 302);
+  const revenueResponse = await fetch(`${url}/revenue/save`, {
+    method: 'POST',
+    redirect: 'manual',
+    headers: { Cookie: authenticatedCookie, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      _csrf: auditToken,
+      request_key: crypto.randomUUID(),
+      admin_id: '1',
+      entry_date: today,
+      unit_name: 'Unit Test',
+      transaction_count: '2',
+      amount_rupiah: '250000',
+      note: 'Test revenue'
+    })
+  });
+  assert.equal(revenueResponse.status, 302);
+  const reportsPage = await fetch(`${url}/reports?month=${new Date().getMonth() + 1}&year=${new Date().getFullYear()}`, {
+    headers: { Cookie: authenticatedCookie }
+  });
+  assert.equal(reportsPage.status, 200);
+  const reportHtml = await reportsPage.text();
+  assert.match(reportHtml, /Daily response KPI/);
+  assert.doesNotMatch(reportHtml, /Daily response KPI revised/, 'editing a KPI must not rewrite its past assessment');
+  const pdfReport = await fetch(`${url}/reports/export/pdf?month=${new Date().getMonth() + 1}&year=${new Date().getFullYear()}`, {
+    headers: { Cookie: authenticatedCookie }
+  });
+  assert.equal(pdfReport.status, 200);
+  assert.match(pdfReport.headers.get('content-type'), /application\/pdf/);
+  const pdfBuffer = Buffer.from(await pdfReport.arrayBuffer());
+  assert.equal(pdfBuffer.byteLength > 100, true);
+  assert.equal(pdfBuffer.toString('ascii', 0, 5), '%PDF-');
+  const excelReport = await fetch(`${url}/reports/export/excel?month=${new Date().getMonth() + 1}&year=${new Date().getFullYear()}`, {
+    headers: { Cookie: authenticatedCookie }
+  });
+  assert.equal(excelReport.status, 200);
+  assert.match(excelReport.headers.get('content-type'), /spreadsheetml/);
+  const excelBuffer = Buffer.from(await excelReport.arrayBuffer());
+  assert.equal(excelBuffer.byteLength > 100, true);
+  const workbook = XLSX.read(excelBuffer, { type: 'buffer' });
+  assert.ok(workbook.SheetNames.includes('Rekap'));
+  assert.ok(workbook.SheetNames.includes('Omset'));
+  const revenueRows = XLSX.utils.sheet_to_json(workbook.Sheets.Omset);
+  assert.equal(revenueRows[0]['Omset (Rp)'], 250000);
+
   const invalidFileForm = new FormData();
   invalidFileForm.set('_csrf', auditToken);
   invalidFileForm.set('evidence', new Blob(['not an image']), 'payload.txt');
@@ -200,11 +303,16 @@ test('protects login, forms, sessions, and uploaded evidence', async (t) => {
   const secondLoginCookie = getCookie(secondLoginPage);
   const secondLoginToken = getCsrfToken(await secondLoginPage.text());
   for (let attempt = 0; attempt < 9; attempt += 1) {
-    const failedLogin = await fetch(`${url}/login`, {
-      method: 'POST',
-      headers: { Cookie: secondLoginCookie, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ username: 'test-admin', password: 'wrong-password', _csrf: secondLoginToken })
-    });
+    let failedLogin;
+    try {
+      failedLogin = await fetch(`${url}/login`, {
+        method: 'POST',
+        headers: { Cookie: secondLoginCookie, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ username: 'test-admin', password: 'wrong-password', _csrf: secondLoginToken })
+      });
+    } catch (error) {
+      throw new Error(`${error.message}\n${child.stderrLog}`);
+    }
     assert.equal(failedLogin.status, 401);
   }
   const limitedLogin = await fetch(`${url}/login`, {

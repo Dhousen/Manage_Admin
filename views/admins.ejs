@@ -12,8 +12,7 @@
         <ul class="nav-list">
           <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
           <li class="nav-item"><a class="active" href="/admins">Data Karyawan</a></li>
-          <li class="nav-item"><a href="/performance">Kinerja Harian</a></li>
-          <li class="nav-item"><a href="/audit">Audit Kinerja</a></li>
+          <li class="nav-item"><a href="/assessments">Penilaian Kinerja Admin</a></li>
           <li class="nav-item"><a href="/reports">Laporan Bulanan</a></li>
           <li class="nav-item"><a href="/jobdesk">Manajemen Jobdesk</a></li>
           <li class="nav-item"><a href="/history">Riwayat Perubahan</a></li>
@@ -24,8 +23,8 @@
       </aside>
       <main class="content">
         <div class="topbar">
-          <div><div class="muted">Halo, <%= user.full_name %></div><strong><%= user.role %></strong></div>
-          <div class="user-meta">Data Karyawan</div>
+          <div class="topbar-leading"><div class="muted">Profil dan KPI karyawan</div></div>
+          <div class="topbar-actions"><button type="button" class="profile-toggle" data-profile-toggle aria-expanded="false"><span><%= user.full_name %></span><span class="profile-role"><%= user.role %></span></button><div class="profile-menu" data-profile-menu hidden><a href="/settings">Pengaturan akun</a><a href="/logout">Keluar</a></div></div>
         </div>
         <div class="panel-header">
           <div>
@@ -41,6 +40,7 @@
             <thead>
               <tr>
                 <th>Nama Karyawan</th>
+                <th>Jobdesk aktif</th>
                 <th>Posisi</th>
                 <th>Status</th>
                 <th>Total Tugas</th>
@@ -53,6 +53,7 @@
               <% if (admins.length) { admins.forEach((admin) => { %>
                 <tr>
                   <td><%= admin.name %></td>
+                  <td><a href="/jobdesk?adminId=<%= admin.id %>"><%= admin.jobdesk_count %> KPI</a></td>
                   <td><%= admin.position || '-' %></td>
                   <td><span class="status-badge <%= Number(admin.active) === 1 ? 'status-selesai' : 'status-belum' %>"><%= Number(admin.active) === 1 ? 'Aktif' : 'Nonaktif' %></span></td>
                   <td><%= admin.total_tasks || 0 %></td>
@@ -79,12 +80,18 @@
                             </button>
                           <% } %>
                         </form>
+                        <% if (admin.can_delete) { %>
+                          <form action="/admin/<%= admin.id %>/delete" method="POST">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                            <button class="action-btn delete" type="submit" title="Hapus karyawan" aria-label="Hapus karyawan" onclick="return confirm('Hapus karyawan ini?')">Hapus</button>
+                          </form>
+                        <% } %>
                       <% } %>
                     </div>
                   </td>
                 </tr>
               <% }) } else { %>
-                <tr><td colspan="7" class="muted">Belum ada data karyawan. Tambahkan karyawan terlebih dahulu untuk mulai mengelola jobdesk dan performanya.</td></tr>
+                <tr><td colspan="8" class="muted">Belum ada data karyawan. Tambahkan karyawan terlebih dahulu untuk mulai mengelola jobdesk dan performanya.</td></tr>
               <% } %>
             </tbody>
           </table>
